@@ -1,0 +1,874 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mark & Sweep — LISP 1.5, 1960</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: #080807;
+  color: #d8d0c4;
+  font-family: Georgia, 'Times New Roman', serif;
+  min-height: 100vh;
+  padding: 2.5rem 1.75rem 5rem;
+  overflow-x: hidden;
+}
+
+.wrap { max-width: 980px; margin: 0 auto; }
+
+/* ── Header ── */
+.eyebrow {
+  font-family: 'Courier New', monospace;
+  font-size: 10px;
+  letter-spacing: .26em;
+  text-transform: uppercase;
+  color: #6a9e68;
+  margin-bottom: .5rem;
+}
+h1 {
+  font-size: clamp(1.8rem, 4.5vw, 2.9rem);
+  font-weight: 400;
+  line-height: 1.12;
+  margin-bottom: .8rem;
+  color: #e0d8cc;
+}
+h1 em { font-style: italic; color: #6a9e68; }
+.lede {
+  font-size: .95rem;
+  line-height: 1.8;
+  color: #5a5650;
+  max-width: 560px;
+  padding-left: 1rem;
+  border-left: 2px solid #1a1e18;
+  margin-bottom: 2rem;
+}
+
+/* ── Narrative ── */
+.narr-box {
+  border: 0.5px solid #1a1c18;
+  border-radius: 10px;
+  padding: 1rem 1.3rem;
+  background: #0d0d0b;
+  margin-bottom: 1.25rem;
+  min-height: 64px;
+}
+.narr-phase {
+  font-family: 'Courier New', monospace;
+  font-size: 9.5px;
+  letter-spacing: .22em;
+  text-transform: uppercase;
+  color: #6a9e68;
+  margin-bottom: .35rem;
+}
+.narr-text {
+  font-size: .93rem;
+  line-height: 1.72;
+  color: #b8b0a4;
+}
+.narr-text code {
+  font-family: 'Courier New', monospace;
+  font-size: .82em;
+  color: #68b882;
+  background: #0e1a10;
+  padding: 1px 5px;
+  border-radius: 3px;
+}
+.narr-text em     { color: #c4883a; font-style: italic; }
+.narr-text strong { color: #6aae68; font-weight: 500; }
+
+/* ── Layout ── */
+.main-cols {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin-bottom: 1.25rem;
+  align-items: start;
+}
+@media (max-width: 680px) { .main-cols { grid-template-columns: 1fr; } }
+
+.col-label {
+  font-family: 'Courier New', monospace;
+  font-size: 9px;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  color: #252420;
+  margin-bottom: .5rem;
+}
+
+/* ── Code panel ── */
+.code-panel {
+  background: #0a0a08;
+  border: 0.5px solid #181814;
+  border-radius: 10px;
+  overflow: hidden;
+}
+.code-section {
+  border-bottom: 0.5px solid #141410;
+}
+.code-section:last-child { border-bottom: none; }
+.code-sec-label {
+  font-family: 'Courier New', monospace;
+  font-size: 8px;
+  letter-spacing: .22em;
+  text-transform: uppercase;
+  padding: 5px 10px;
+  background: #0c0c0a;
+  border-bottom: 0.5px solid #141410;
+}
+.cs-mark  .code-sec-label { color: #2a5a2a; border-left: 2px solid #3a7a3a; }
+.cs-sweep .code-sec-label { color: #5a4a18; border-left: 2px solid #c0942a; }
+.cs-alloc .code-sec-label { color: #2a4a6a; border-left: 2px solid #4a8edb; }
+
+.code-line {
+  font-family: 'Courier New', monospace;
+  font-size: 10.5px;
+  line-height: 1.7;
+  padding: 0 8px 0 10px;
+  white-space: pre;
+  border-left: 2px solid transparent;
+  color: #302e2a;
+  transition: background .3s, border-color .3s, color .3s;
+}
+.code-line.hl-mark  { background: rgba(74,180,74,.1);  border-left-color: #4ab44a; color: #88c888; }
+.code-line.hl-sweep { background: rgba(192,148,42,.1); border-left-color: #c0942a; color: #d8a850; }
+.code-line.hl-alloc { background: rgba(74,142,219,.1); border-left-color: #4a8edb; color: #80b8ee; }
+
+/* ── Heap grid ── */
+.heap-panel {
+  background: #0a0a08;
+  border: 0.5px solid #181814;
+  border-radius: 10px;
+  padding: .9rem;
+}
+.heap-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  margin-bottom: .75rem;
+}
+.cell {
+  border: 0.5px solid;
+  border-radius: 5px;
+  padding: 5px 6px;
+  transition: background .45s, border-color .45s;
+  position: relative;
+  min-height: 64px;
+}
+
+.cell-addr {
+  font-family: 'Courier New', monospace;
+  font-size: 7.5px;
+  color: #252420;
+  margin-bottom: 3px;
+  letter-spacing: .04em;
+}
+.cell-field {
+  font-family: 'Courier New', monospace;
+  font-size: 8.5px;
+  line-height: 1.55;
+  display: flex;
+  gap: 3px;
+  align-items: baseline;
+}
+.cell-key { color: #202018; width: 22px; flex-shrink: 0; }
+.cell-val { transition: color .4s; }
+.cell-mark-row {
+  margin-top: 4px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.mark-bit {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  border: 0.5px solid #202018;
+  background: transparent;
+  transition: background .4s, border-color .4s;
+  flex-shrink: 0;
+}
+.mark-label {
+  font-family: 'Courier New', monospace;
+  font-size: 7px;
+  color: #202018;
+  transition: color .4s;
+  letter-spacing: .05em;
+}
+
+/* cell states */
+.cs-free     { background: #0d0d0b; border-color: #141412; }
+.cs-free     .cell-key { color: #181614; }
+.cs-free     .cell-val { color: #202018; }
+
+.cs-live     { background: #0d1a0e; border-color: #2a5a2e; }
+.cs-live     .cell-key { color: #2a4a2e; }
+.cs-live     .cell-val { color: #4a8a52; }
+
+.cs-marked   { background: #0e1e10; border-color: #4a9a50; }
+.cs-marked   .cell-val { color: #78c880; }
+.cs-marked   .mark-bit { background: #4a9a50; border-color: #6ab86a; }
+.cs-marked   .mark-label { color: #4a8a50; }
+
+.cs-sweep    { background: #1c1808; border-color: #c0942a; }
+.cs-sweep    .cell-val { color: #d8a850; }
+
+.cs-freed    { background: #0d0c0a; border-color: #181614; }
+.cs-freed    .cell-val { color: #252220; }
+
+.cs-root     { background: #101a10; border-color: #3a7a3e; box-shadow: 0 0 0 1.5px #2a5a2e; }
+.cs-root     .cell-key { color: #2a4a2e; }
+.cs-root     .cell-val { color: #68b872; }
+
+.cs-new      { background: #0e141e; border-color: #4a8edb; }
+.cs-new      .cell-val { color: #6aaae8; }
+
+/* root badge */
+.root-badge {
+  position: absolute;
+  top: 3px; right: 4px;
+  font-family: 'Courier New', monospace;
+  font-size: 6.5px;
+  letter-spacing: .06em;
+  padding: 1px 4px;
+  border-radius: 2px;
+  background: #1e3a20;
+  color: #4a8a50;
+  border: 0.5px solid #2a5a2e;
+}
+
+/* ── Free list ── */
+.freelist-panel {
+  background: #0a0a08;
+  border: 0.5px solid #181814;
+  border-radius: 10px;
+  padding: .75rem .9rem;
+  margin-bottom: 1.25rem;
+}
+.fl-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: .5rem;
+}
+.fl-count {
+  font-family: 'Courier New', monospace;
+  font-size: 9.5px;
+  color: #252420;
+  transition: color .5s;
+  letter-spacing: .05em;
+}
+.fl-count.has { color: #4a8edb; }
+.fl-chain {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+  min-height: 24px;
+}
+.fl-chip {
+  font-family: 'Courier New', monospace;
+  font-size: 9px;
+  padding: 2px 8px;
+  border-radius: 3px;
+  background: #0d121e;
+  border: 0.5px solid #2a4a7a;
+  color: #4a7ab8;
+  animation: chipIn .3s ease-out both;
+}
+.fl-arrow {
+  font-size: 10px;
+  color: #1e1c18;
+}
+.fl-null {
+  font-family: 'Courier New', monospace;
+  font-size: 9px;
+  color: #1e1c18;
+}
+
+@keyframes chipIn {
+  from { transform: scale(.75); opacity: 0; }
+  to   { transform: none; opacity: 1; }
+}
+
+/* ── Controls ── */
+.controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 2rem;
+}
+.ctrl-btn {
+  padding: 5px 16px;
+  border-radius: 20px;
+  border: 0.5px solid #1c1c18;
+  background: transparent;
+  color: #5a5850;
+  cursor: pointer;
+  font-family: Georgia, serif;
+  font-size: 12px;
+  transition: all .15s;
+  white-space: nowrap;
+}
+.ctrl-btn:hover { background: #101010; border-color: #2c2c28; color: #a8a09a; }
+.ctrl-btn:disabled { opacity: .2; cursor: default; pointer-events: none; }
+.prog-wrap { flex: 1; text-align: center; }
+.prog-label {
+  font-family: 'Courier New', monospace;
+  font-size: 9px;
+  color: #252420;
+  margin-bottom: 4px;
+  letter-spacing: .1em;
+}
+.prog-bar { height: 1.5px; background: #161412; border-radius: 1px; overflow: hidden; }
+.prog-fill { height: 100%; transition: width .4s; }
+
+/* phase-based progress color */
+.pf-mark  { background: #4a9a50; }
+.pf-sweep { background: #c0942a; }
+.pf-alloc { background: #4a8edb; }
+
+/* ── Final callout ── */
+.callout {
+  opacity: 0; transform: translateY(10px);
+  transition: opacity .8s, transform .8s;
+  pointer-events: none;
+}
+.callout.show { opacity: 1; transform: none; pointer-events: auto; }
+.callout-inner {
+  border-left: 2px solid #4a9a50;
+  padding: .9rem 1.4rem;
+  max-width: 680px;
+}
+.callout-inner p {
+  font-size: .96rem;
+  line-height: 1.78;
+  color: #9898a0;
+  font-style: italic;
+}
+.callout-inner cite {
+  display: block;
+  margin-top: .7rem;
+  font-family: 'Courier New', monospace;
+  font-size: .73rem;
+  color: #252420;
+  letter-spacing: .07em;
+  font-style: normal;
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="eyebrow">LISP 1.5 &nbsp;·&nbsp; 1960 &nbsp;·&nbsp; IBM 704</div>
+  <h1>Mark &amp; Sweep —<br><em>How Memory Learned to Forget</em></h1>
+  <p class="lede">McCarthy's solution to the accumulation problem. Two passes over memory: one to trace what's reachable, one to reclaim everything else. The first garbage collector ever written.</p>
+
+  <div class="narr-box">
+    <div class="narr-phase" id="narr-phase">—</div>
+    <div class="narr-text" id="narr-text">—</div>
+  </div>
+
+  <div class="main-cols">
+
+    <!-- Code -->
+    <div>
+      <div class="col-label">Algorithm — LISP 1.5 pseudocode</div>
+      <div class="code-panel">
+
+        <div class="code-section cs-mark">
+          <div class="code-sec-label">Phase 1 &nbsp;·&nbsp; Mark</div>
+          <div id="code-mark"></div>
+        </div>
+
+        <div class="code-section cs-sweep">
+          <div class="code-sec-label">Phase 2 &nbsp;·&nbsp; Sweep</div>
+          <div id="code-sweep"></div>
+        </div>
+
+        <div class="code-section cs-alloc">
+          <div class="code-sec-label">Allocation — triggers collection</div>
+          <div id="code-alloc"></div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Heap -->
+    <div>
+      <div class="col-label">Heap &mdash; 12 cons cells</div>
+      <div class="heap-panel">
+        <div class="heap-grid" id="heap-grid"></div>
+        <div style="font-size:8px;font-family:'Courier New',monospace;color:#1e1c18;display:flex;gap:14px;flex-wrap:wrap;">
+          <span><span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#0e1a10;border:0.5px solid #2a5a2e;vertical-align:middle;margin-right:3px;"></span>live</span>
+          <span><span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#4a9a50;border:0.5px solid #6ab86a;vertical-align:middle;margin-right:3px;"></span>marked</span>
+          <span><span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#1c1808;border:0.5px solid #c0942a;vertical-align:middle;margin-right:3px;"></span>sweeping</span>
+          <span><span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#0d0c0a;border:0.5px solid #181614;vertical-align:middle;margin-right:3px;"></span>freed</span>
+          <span><span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#0e141e;border:0.5px solid #4a8edb;vertical-align:middle;margin-right:3px;"></span>new alloc</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Free list -->
+  <div class="freelist-panel">
+    <div class="fl-header">
+      <div class="col-label" style="margin:0;">Free list &mdash; available cells (singly linked via cdr)</div>
+      <div class="fl-count" id="fl-count">null</div>
+    </div>
+    <div class="fl-chain" id="fl-chain">
+      <span class="fl-null">null</span>
+    </div>
+  </div>
+
+  <!-- Controls -->
+  <div class="controls">
+    <button class="ctrl-btn" id="btn-prev" onclick="go(-1)">&#8592; Back</button>
+    <div class="prog-wrap">
+      <div class="prog-label" id="prog-lbl"></div>
+      <div class="prog-bar"><div class="prog-fill" id="prog-fill"></div></div>
+    </div>
+    <button class="ctrl-btn" id="btn-next" onclick="go(1)">Next &#8594;</button>
+    <button class="ctrl-btn" id="btn-auto" onclick="toggleAuto()">Auto &#9654;</button>
+  </div>
+
+  <div class="callout" id="callout">
+    <div class="callout-inner">
+      <p>The algorithm runs in two phases and touches every cell exactly twice. It requires no cooperation from the program,
+        no reference counts, no programmer annotations. Reachability is the only criterion for survival.
+        Every cell that cannot be reached from the roots, by any chain of pointers,
+        is automatically returned to the free list.</p>
+      <cite>&#8212; The first garbage collector &nbsp;·&nbsp; John McCarthy, LISP 1.5, 1960</cite>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ── CODE CONTENT ──────────────────────────────────────────
+
+const markLines = [
+  'function mark(P):',
+  '    if P is null or P is atom:',
+  '        return',
+  '    if P.mark == 1:',
+  '        return          // already visited',
+  '    P.mark = 1          // mark alive',
+  '    mark(P.car)         // recurse left',
+  '    mark(P.cdr)         // recurse right',
+  '',
+  'function mark_all_roots():',
+  '    for each P in roots:',
+  '        mark(P)',
+];
+
+const sweepLines = [
+  'function sweep():',
+  '    free_list = null',
+  '',
+  '    for each ConsCell C in heap:',
+  '        if C.mark == 1:',
+  '            C.mark = 0  // reset for next GC',
+  '        else:',
+  '            C.cdr = free_list',
+  '            free_list = C',
+];
+
+const allocLines = [
+  'function cons(a, d) -> ConsCell:',
+  '    if free_list == null:',
+  '        mark_all_roots()',
+  '        sweep()',
+  '        if free_list == null:',
+  '            ERROR "out of memory"',
+  '    cell      = free_list',
+  '    free_list = free_list.cdr',
+  '    cell.car  = a',
+  '    cell.cdr  = d',
+  '    cell.mark = 0',
+  '    return cell',
+];
+
+function buildCode(lines, id, kind) {
+  const el = document.getElementById(id);
+  lines.forEach((l, i) => {
+    const d = document.createElement('div');
+    d.className = 'code-line';
+    d.id = `${id}-${i}`;
+    d.textContent = l || ' ';
+    el.appendChild(d);
+  });
+}
+
+buildCode(markLines,  'code-mark',  'mark');
+buildCode(sweepLines, 'code-sweep', 'sweep');
+buildCode(allocLines, 'code-alloc', 'alloc');
+
+// ── HEAP MODEL ───────────────────────────────────────────
+
+// 12 cells, indexed 0–11
+// addr: 0x20 + i*8
+const addr = i => '0x' + (0x20 + i*8).toString(16).toUpperCase();
+
+// Initial setup:
+// Roots: cells 0, 3 (held by stack/globals)
+// Live reachable from roots:
+//   0 → car:1, cdr:2    (root)
+//   1 → car:'A', cdr:4
+//   2 → car:'B', cdr:null
+//   3 → car:5, cdr:null  (root)
+//   4 → car:'C', cdr:null
+//   5 → car:6, cdr:7
+//   6 → car:'D', cdr:null
+//   7 → car:'E', cdr:null
+// Orphaned (unreachable):
+//   8, 9, 10, 11
+
+const CELL_DATA = [
+  { car: '→0x28', cdr: '→0x30', isRoot: true  },  // 0
+  { car: "'A'",   cdr: '→0x40', isRoot: false },   // 1
+  { car: "'B'",   cdr: 'nil',   isRoot: false },   // 2
+  { car: '→0x48', cdr: 'nil',   isRoot: true  },   // 3
+  { car: "'C'",   cdr: 'nil',   isRoot: false },   // 4
+  { car: '→0x58', cdr: '→0x60', isRoot: false },   // 5
+  { car: "'D'",   cdr: 'nil',   isRoot: false },   // 6
+  { car: "'E'",   cdr: 'nil',   isRoot: false },   // 7
+  { car: "'?'",   cdr: 'nil',   isRoot: false },   // 8  orphan
+  { car: "'?'",   cdr: 'nil',   isRoot: false },   // 9  orphan
+  { car: "'?'",   cdr: 'nil',   isRoot: false },   // 10 orphan
+  { car: "'?'",   cdr: 'nil',   isRoot: false },   // 11 orphan
+];
+
+// ── STEPS ────────────────────────────────────────────────
+
+const STEPS = [
+
+  // 0 — Initial state
+  {
+    phase: 'Initial state — before collection',
+    narr: 'The heap holds 12 cons cells. Cells 0 and 3 are <em>roots</em> — reachable from the stack and global registers. Through their <code>car</code>/<code>cdr</code> pointers, cells 1–7 are transitively reachable. Cells 8–11 are orphaned intermediates from previous computations. <strong>The allocator\'s free list is exhausted.</strong> A call to <code>cons()</code> triggers collection.',
+    cellStates: [
+      'live','live','live','live','live','live','live','live',
+      'live','live','live','live'
+    ],
+    marked: new Set(),
+    sweepCursor: -1,
+    freeList: [],
+    hlMark: [], hlSweep: [], hlAlloc: [0,1],
+    phase_key: 'alloc',
+    callout: false,
+  },
+
+  // 1 — cons triggers mark_all_roots
+  {
+    phase: 'Allocation — free list empty, GC triggered',
+    narr: '<code>cons()</code> finds <code>free_list == null</code>. It calls <code>mark_all_roots()</code>. The collector iterates over all root pointers — the stack and machine registers. It finds two: cell 0 and cell 3.',
+    cellStates: ['root','live','live','root','live','live','live','live','live','live','live','live'],
+    marked: new Set(),
+    sweepCursor: -1,
+    freeList: [],
+    hlMark: [9,10,11], hlSweep: [], hlAlloc: [1,2,3],
+    phase_key: 'alloc',
+    callout: false,
+  },
+
+  // 2 — mark root 0 and recurse
+  {
+    phase: 'Phase 1: Mark — tracing from root 0',
+    narr: '<code>mark(cell_0)</code> begins. Cell 0\'s mark bit was 0 — set it to 1. Now recurse: call <code>mark(cell_0.car)</code> → cell 1. Then <code>mark(cell_0.cdr)</code> → cell 2. The traversal fans out.',
+    cellStates: ['root','live','live','root','live','live','live','live','live','live','live','live'],
+    marked: new Set([0]),
+    sweepCursor: -1,
+    freeList: [],
+    hlMark: [0,5,6,7], hlSweep: [], hlAlloc: [],
+    phase_key: 'mark',
+    callout: false,
+  },
+
+  // 3 — mark cells 1, 2, 4
+  {
+    phase: 'Phase 1: Mark — tracing children of cell 0',
+    narr: 'Cell 1 reached via <code>car</code>. Mark it. Its <code>cdr</code> points to cell 4 — recurse there too. Cell 2 reached via <code>cdr</code>. Mark it — its pointers are atoms (<code>nil</code>, <code>\'B\'</code>), so recursion terminates immediately.',
+    cellStates: ['root','live','live','root','live','live','live','live','live','live','live','live'],
+    marked: new Set([0,1,2,4]),
+    sweepCursor: -1,
+    freeList: [],
+    hlMark: [0,5,6,7], hlSweep: [], hlAlloc: [],
+    phase_key: 'mark',
+    callout: false,
+  },
+
+  // 4 — mark root 3 and its subtree
+  {
+    phase: 'Phase 1: Mark — tracing from root 3',
+    narr: '<code>mark(cell_3)</code>. It points to cell 5, which points to cells 6 and 7. All marked. <strong>Every cell reachable from any root now has mark = 1.</strong> The mark phase is complete — 8 cells marked, 4 untouched.',
+    cellStates: ['root','live','live','root','live','live','live','live','live','live','live','live'],
+    marked: new Set([0,1,2,3,4,5,6,7]),
+    sweepCursor: -1,
+    freeList: [],
+    hlMark: [0,5,6,7], hlSweep: [], hlAlloc: [],
+    phase_key: 'mark',
+    callout: false,
+  },
+
+  // 5 — sweep begins
+  {
+    phase: 'Phase 2: Sweep — linear scan begins',
+    narr: '<code>sweep()</code> starts with <code>free_list = null</code> and scans every address in the heap linearly, from first to last. It needs no pointer-following — just a cursor advancing through memory.',
+    cellStates: ['marked','marked','marked','marked','marked','marked','marked','marked','live','live','live','live'],
+    marked: new Set([0,1,2,3,4,5,6,7]),
+    sweepCursor: 0,
+    freeList: [],
+    hlMark: [], hlSweep: [0,1,3], hlAlloc: [],
+    phase_key: 'sweep',
+    callout: false,
+  },
+
+  // 6 — sweep passes marked cells 0–3, resets marks
+  {
+    phase: 'Phase 2: Sweep — marked cells survive, marks reset',
+    narr: 'Cells 0–7 are marked. For each: set <code>mark = 0</code> to prepare for the <em>next</em> collection. They are not freed — they are simply cleared and left in place. The sweep cursor keeps moving.',
+    cellStates: ['live','live','live','live','live','live','live','live','sweep','sweep','sweep','sweep'],
+    marked: new Set(),
+    sweepCursor: 8,
+    freeList: [],
+    hlMark: [], hlSweep: [3,4,5], hlAlloc: [],
+    phase_key: 'sweep',
+    callout: false,
+  },
+
+  // 7 — sweep reclaims 8
+  {
+    phase: 'Phase 2: Sweep — first orphan reclaimed',
+    narr: 'Cell 8: <code>mark == 0</code>. It was never reached. <code>sweep()</code> sets <code>C.cdr = free_list</code> (null) and <code>free_list = C</code>. Cell 8 is threaded onto the free list — reclaimed in a single pointer write.',
+    cellStates: ['live','live','live','live','live','live','live','live','freed','sweep','sweep','sweep'],
+    marked: new Set(),
+    sweepCursor: 9,
+    freeList: [8],
+    hlMark: [], hlSweep: [3,6,7,8], hlAlloc: [],
+    phase_key: 'sweep',
+    callout: false,
+  },
+
+  // 8 — sweep reclaims 9, 10, 11
+  {
+    phase: 'Phase 2: Sweep — all orphans reclaimed',
+    narr: 'Cells 9, 10, 11 — all unmarked — are each prepended to the free list via their <code>cdr</code> field. The free list is now a singly-linked chain: <code>11 → 10 → 9 → 8 → null</code>. <strong>Four cells recovered. Zero programmer effort.</strong>',
+    cellStates: ['live','live','live','live','live','live','live','live','freed','freed','freed','freed'],
+    marked: new Set(),
+    sweepCursor: -1,
+    freeList: [11,10,9,8],
+    hlMark: [], hlSweep: [0,1,3,6,7,8], hlAlloc: [],
+    phase_key: 'sweep',
+    callout: false,
+  },
+
+  // 9 — cons() resumes, allocates from free list
+  {
+    phase: 'Allocation — cons() resumes, pops free list',
+    narr: '<code>cons()</code> resumes where it was interrupted. <code>free_list</code> is no longer null. <code>cell = free_list</code> (cell 11). <code>free_list = free_list.cdr</code> (cell 10). The cell is initialised with the requested <code>car</code> and <code>cdr</code> values. <strong>Memory reclaimed. Program continues.</strong>',
+    cellStates: ['live','live','live','live','live','live','live','live','freed','freed','freed','new'],
+    marked: new Set(),
+    sweepCursor: -1,
+    freeList: [10,9,8],
+    hlMark: [], hlSweep: [], hlAlloc: [1,6,7,8,9,10,11],
+    phase_key: 'alloc',
+    callout: true,
+  },
+
+];
+
+// ── RENDER ────────────────────────────────────────────────
+
+function mk(tag, attrs, text) {
+  var el = document.createElement(tag);
+  Object.keys(attrs || {}).forEach(function(k) {
+    if (k === 'cls') el.className = attrs[k];
+    else el.setAttribute(k, attrs[k]);
+  });
+  if (text !== undefined) el.textContent = text;
+  return el;
+}
+
+function initHeap() {
+  var grid = document.getElementById('heap-grid');
+  grid.innerHTML = '';
+  CELL_DATA.forEach(function(c, i) {
+    var div = mk('div', { cls: 'cell cs-free', id: 'cell-' + i });
+
+    if (c.isRoot) {
+      var badge = mk('div', { cls: 'root-badge', id: 'root-badge-' + i }, 'ROOT');
+      badge.style.display = 'none';
+      div.appendChild(badge);
+    }
+
+    div.appendChild(mk('div', { cls: 'cell-addr' }, addr(i)));
+
+    var carRow = mk('div', { cls: 'cell-field' });
+    carRow.appendChild(mk('span', { cls: 'cell-key' }, 'car'));
+    carRow.appendChild(mk('span', { cls: 'cell-val', id: 'car-' + i }, c.car));
+    div.appendChild(carRow);
+
+    var cdrRow = mk('div', { cls: 'cell-field' });
+    cdrRow.appendChild(mk('span', { cls: 'cell-key' }, 'cdr'));
+    cdrRow.appendChild(mk('span', { cls: 'cell-val', id: 'cdr-' + i }, c.cdr));
+    div.appendChild(cdrRow);
+
+    var markRow = mk('div', { cls: 'cell-mark-row' });
+    markRow.appendChild(mk('div', { cls: 'mark-bit', id: 'mb-' + i }));
+    markRow.appendChild(mk('span', { cls: 'mark-label', id: 'ml-' + i }, 'mark=0'));
+    div.appendChild(markRow);
+
+    grid.appendChild(div);
+  });
+}
+
+function applyStep(step) {
+  // narr
+  document.getElementById('narr-phase').textContent = step.phase;
+  document.getElementById('narr-text').innerHTML = step.narr;
+
+  // cell states
+  step.cellStates.forEach((st, i) => {
+    const cell = document.getElementById(`cell-${i}`);
+    cell.className = `cell cs-${st}`;
+
+    // mark bit
+    const mb = document.getElementById(`mb-${i}`);
+    const ml = document.getElementById(`ml-${i}`);
+    if (step.marked.has(i)) {
+      mb.style.background = '#4a9a50';
+      mb.style.borderColor = '#6ab86a';
+      ml.style.color = '#4a8a50';
+      ml.textContent = 'mark=1';
+    } else {
+      mb.style.background = 'transparent';
+      mb.style.borderColor = '#202018';
+      ml.style.color = '#202018';
+      ml.textContent = 'mark=0';
+    }
+
+    // root badge
+    const rb = document.getElementById(`root-badge-${i}`);
+    if (rb) rb.style.display = (st === 'root') ? '' : 'none';
+
+    // override cdr for freed cells (show freelist pointer)
+    const cdrEl = document.getElementById(`cdr-${i}`);
+    if (st === 'freed') {
+      const pos = step.freeList.indexOf(i);
+      if (pos !== -1) {
+        const next = step.freeList[pos + 1];
+        cdrEl.textContent = next !== undefined ? `→${addr(next)}` : 'nil';
+      }
+    } else if (st !== 'new') {
+      cdrEl.textContent = CELL_DATA[i].cdr;
+    } else {
+      cdrEl.textContent = "'d'";
+      document.getElementById(`car-${i}`).textContent = "'a'";
+    }
+  });
+
+  // code highlight — clear all
+  ['mark','sweep','alloc'].forEach(kind => {
+    const el = document.getElementById(`code-${kind}`);
+    el.querySelectorAll('.code-line').forEach(l => {
+      l.classList.remove('hl-mark','hl-sweep','hl-alloc');
+    });
+  });
+  step.hlMark.forEach(i => {
+    const el = document.getElementById(`code-mark-${i}`);
+    if (el) el.classList.add('hl-mark');
+  });
+  step.hlSweep.forEach(i => {
+    const el = document.getElementById(`code-sweep-${i}`);
+    if (el) el.classList.add('hl-sweep');
+  });
+  step.hlAlloc.forEach(i => {
+    const el = document.getElementById(`code-alloc-${i}`);
+    if (el) el.classList.add('hl-alloc');
+  });
+
+  // free list
+  const flChain = document.getElementById('fl-chain');
+  const flCount = document.getElementById('fl-count');
+  flChain.innerHTML = '';
+  if (step.freeList.length === 0) {
+    flChain.innerHTML = '<span class="fl-null">null — free list exhausted</span>';
+    flCount.textContent = '0 free';
+    flCount.className = 'fl-count';
+  } else {
+    step.freeList.forEach((ci, i) => {
+      const chip = document.createElement('span');
+      chip.className = 'fl-chip';
+      chip.style.animationDelay = `${i * 40}ms`;
+      chip.textContent = addr(ci);
+      flChain.appendChild(chip);
+      if (i < step.freeList.length - 1) {
+        const arrow = document.createElement('span');
+        arrow.className = 'fl-arrow';
+        arrow.textContent = '→';
+        flChain.appendChild(arrow);
+      }
+    });
+    const nullSpan = document.createElement('span');
+    nullSpan.className = 'fl-arrow';
+    nullSpan.textContent = '→ null';
+    flChain.appendChild(nullSpan);
+    flCount.textContent = `${step.freeList.length} free`;
+    flCount.className = 'fl-count has';
+  }
+
+  // progress bar
+  const k = step.phase_key;
+  const colors = { mark:'#4a9a50', sweep:'#c0942a', alloc:'#4a8edb' };
+  document.getElementById('prog-fill').style.background = colors[k];
+
+  // callout
+  document.getElementById('callout').classList.toggle('show', step.callout);
+}
+
+// ── NAVIGATION ────────────────────────────────────────────
+
+let cur = 0, timer = null;
+
+function go(d) {
+  stopAuto();
+  cur = Math.max(0, Math.min(STEPS.length - 1, cur + d));
+  applyStep(STEPS[cur]);
+  document.getElementById('prog-lbl').textContent = `${cur+1} / ${STEPS.length}`;
+  document.getElementById('prog-fill').style.width = `${(cur+1)/STEPS.length*100}%`;
+  document.getElementById('btn-prev').disabled = cur === 0;
+  document.getElementById('btn-next').disabled = cur === STEPS.length - 1;
+}
+
+function toggleAuto() {
+  if (timer) { stopAuto(); return; }
+  document.getElementById('btn-auto').innerHTML = 'Pause &#9646;&#9646;';
+  timer = setInterval(() => {
+    if (cur >= STEPS.length - 1) { stopAuto(); return; }
+    cur++;
+    applyStep(STEPS[cur]);
+    document.getElementById('prog-lbl').textContent = `${cur+1} / ${STEPS.length}`;
+    document.getElementById('prog-fill').style.width = `${(cur+1)/STEPS.length*100}%`;
+    document.getElementById('btn-prev').disabled = false;
+    document.getElementById('btn-next').disabled = cur === STEPS.length - 1;
+  }, 2800);
+}
+
+function stopAuto() {
+  if (timer) { clearInterval(timer); timer = null; }
+  document.getElementById('btn-auto').innerHTML = 'Auto &#9654;';
+}
+
+initHeap();
+
+// expose to window so onclick= attributes work in sandboxed iframes
+window.go = go;
+window.toggleAuto = toggleAuto;
+window.stopAuto = stopAuto;
+
+go(0);
+</script>
+</body>
+</html>

@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Problem McCarthy Noticed — 1958</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: #0a0908;
+  color: #e4ddd3;
+  font-family: Georgia, 'Times New Roman', serif;
+  min-height: 100vh;
+  padding: 3rem 1.75rem 5rem;
+  overflow-x: hidden;
+}
+
+.wrap { max-width: 880px; margin: 0 auto; }
+
+/* ── Header ── */
+.eyebrow {
+  font-family: 'Courier New', monospace;
+  font-size: 10px;
+  letter-spacing: .26em;
+  text-transform: uppercase;
+  color: #b87d2a;
+  margin-bottom: .55rem;
+}
+
+h1 {
+  font-size: clamp(2rem, 5vw, 3.2rem);
+  font-weight: 400;
+  line-height: 1.13;
+  margin-bottom: 1.4rem;
+  color: #e8e1d6;
+}
+
+h1 em { font-style: italic; color: #c4883a; }
+
+.lede {
+  font-size: 1.02rem;
+  line-height: 1.82;
+  color: #7a7268;
+  max-width: 560px;
+  padding-left: 1rem;
+  border-left: 2px solid #3a2e18;
+  margin-bottom: 2.25rem;
+}
+
+hr.div {
+  border: none;
+  border-top: 0.5px solid #1e1c18;
+  margin: 2rem 0;
+}
+
+/* ── Step narrative ── */
+.step-box {
+  border: 0.5px solid #222018;
+  border-radius: 10px;
+  padding: 1.1rem 1.35rem;
+  background: #0f0e0b;
+  margin-bottom: 1.5rem;
+  min-height: 68px;
+  position: relative;
+}
+
+.step-id {
+  font-family: 'Courier New', monospace;
+  font-size: 9.5px;
+  letter-spacing: .2em;
+  text-transform: uppercase;
+  color: #b87d2a;
+  margin-bottom: .4rem;
+}
+
+.step-narr {
+  font-size: .96rem;
+  line-height: 1.75;
+  color: #c0b8ac;
+}
+
+.step-narr code {
+  font-family: 'Courier New', monospace;
+  font-size: .83em;
+  color: #68b882;
+  background: #101a12;
+  padding: 1px 5px;
+  border-radius: 3px;
+}
+
+.step-narr em  { color: #c4883a; font-style: italic; }
+.step-narr strong { color: #d4b84a; font-weight: 500; }
+
+/* ── Two-column ── */
+.cols {
+  display: grid;
+  grid-template-columns: 1fr 310px;
+  gap: 16px;
+  margin-bottom: 1.4rem;
+  align-items: start;
+}
+
+@media (max-width: 660px) { .cols { grid-template-columns: 1fr; } }
+
+.col-label {
+  font-family: 'Courier New', monospace;
+  font-size: 9px;
+  letter-spacing: .2em;
+  text-transform: uppercase;
+  color: #2e2c28;
+  margin-bottom: .55rem;
+}
+
+/* ── SVG tree ── */
+svg#tree {
+  width: 100%;
+  display: block;
+  border: 0.5px solid #1a1814;
+  border-radius: 10px;
+}
+
+/* ── Heap ── */
+.heap-box {
+  background: #0f0e0b;
+  border: 0.5px solid #222018;
+  border-radius: 10px;
+  padding: .9rem 1rem;
+}
+
+.heap-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: .65rem;
+}
+
+.heap-count {
+  font-family: 'Courier New', monospace;
+  font-size: 10px;
+  color: #2e2c28;
+  transition: color .6s;
+  letter-spacing: .05em;
+}
+
+.heap-count.warn   { color: #b87d2a; }
+.heap-count.danger { color: #b04838; }
+
+.heap-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  min-height: 22px;
+}
+
+.chip {
+  font-family: 'Courier New', monospace;
+  font-size: 9px;
+  padding: 2px 7px;
+  border-radius: 3px;
+  border: 0.5px solid;
+  animation: chipIn .35s ease-out both;
+  letter-spacing: .03em;
+}
+
+@keyframes chipIn {
+  from { transform: scale(.7) translateY(4px); opacity: 0; }
+  to   { transform: none; opacity: 1; }
+}
+
+.chip-live   { background: #101a13; border-color: #3a7a52; color: #68b882; }
+.chip-orphan { background: #0d0c0a; border-color: #1e1c18; color: #2a2820; }
+.chip-answer { background: #1c1808; border-color: #7a6018; color: #d4b84a; }
+
+/* ── Controls ── */
+.controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 2.5rem;
+}
+
+.ctrl-btn {
+  padding: 5px 16px;
+  border-radius: 20px;
+  border: 0.5px solid #222018;
+  background: transparent;
+  color: #6a6460;
+  cursor: pointer;
+  font-family: Georgia, serif;
+  font-size: 12.5px;
+  transition: background .15s, border-color .15s, color .15s;
+  white-space: nowrap;
+}
+
+.ctrl-btn:hover { background: #131210; border-color: #3a3830; color: #c0b8ac; }
+.ctrl-btn:disabled { opacity: .25; cursor: default; pointer-events: none; }
+
+.prog-wrap { flex: 1; text-align: center; }
+
+.prog-label {
+  font-family: 'Courier New', monospace;
+  font-size: 9px;
+  color: #2e2c28;
+  margin-bottom: 5px;
+  letter-spacing: .1em;
+}
+
+.prog-bar { height: 1.5px; background: #1a1814; border-radius: 1px; overflow: hidden; }
+.prog-fill { height: 100%; background: #b87d2a; transition: width .4s ease; }
+
+/* ── Final quote ── */
+.final-quote {
+  opacity: 0;
+  transform: translateY(12px);
+  transition: opacity .8s ease, transform .8s ease;
+  pointer-events: none;
+  margin-top: .5rem;
+}
+
+.final-quote.show { opacity: 1; transform: none; pointer-events: auto; }
+
+.quote-inner {
+  border-left: 2px solid #b87d2a;
+  padding: 1rem 1.5rem;
+  max-width: 680px;
+}
+
+.quote-inner blockquote {
+  font-size: 1.05rem;
+  line-height: 1.75;
+  color: #c0b8ac;
+  font-style: italic;
+}
+
+.quote-inner cite {
+  display: block;
+  margin-top: .75rem;
+  font-size: .78rem;
+  color: #3a3830;
+  font-family: 'Courier New', monospace;
+  letter-spacing: .07em;
+  font-style: normal;
+}
+
+/* ── Discovery callout (step 6) ── */
+.discovery {
+  margin-top: 1rem;
+  padding: .75rem 1rem;
+  background: #120e08;
+  border: 0.5px solid #3a2e18;
+  border-radius: 8px;
+  font-family: 'Courier New', monospace;
+  font-size: .82rem;
+  color: #7a6040;
+  line-height: 1.7;
+  opacity: 0;
+  transition: opacity .5s;
+  letter-spacing: .03em;
+}
+
+.discovery.show { opacity: 1; }
+.discovery span { color: #b87d2a; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="eyebrow">IBM Research &nbsp;·&nbsp; Summer 1958</div>
+  <h1>The Problem<br><em>McCarthy Noticed</em></h1>
+  <p class="lede">He chose a sample problem: symbolically differentiate algebraic expressions.
+    The derivative of x² is 2x. LISP could represent these as list structures and apply the rules recursively.
+    He wrote the definition. It was beautiful. Clean. Recursive. Mathematically elegant.
+    And then he noticed something.</p>
+
+  <div class="step-box">
+    <div class="step-id" id="step-id">—</div>
+    <div class="step-narr" id="step-narr">—</div>
+  </div>
+
+  <div class="cols">
+    <div>
+      <div class="col-label">Expression tree &mdash; diff(x²)</div>
+      <svg id="tree" viewBox="0 0 500 350" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <pattern id="dots" x="0" y="0" width="22" height="22" patternUnits="userSpaceOnUse">
+            <circle cx="1" cy="1" r=".6" fill="#161412"/>
+          </pattern>
+        </defs>
+        <rect width="500" height="350" fill="url(#dots)" rx="9"/>
+        <g id="t-edges"></g>
+        <g id="t-nodes"></g>
+      </svg>
+
+      <div class="discovery" id="discovery">
+        <span>OBSERVATION:</span> After each call, the allocator holds<br>
+        no record of which nodes are still reachable.<br>
+        There is no mechanism to reclaim the intermediates.<br>
+        <span>THEY SIMPLY REMAIN.</span>
+      </div>
+    </div>
+
+    <div>
+      <div class="col-label">Heap &mdash; all allocations</div>
+      <div class="heap-box">
+        <div class="heap-header">
+          <span class="col-label" style="margin:0;">Memory blocks</span>
+          <span class="heap-count" id="h-count">0 nodes</span>
+        </div>
+        <div class="heap-grid" id="h-grid"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="controls">
+    <button class="ctrl-btn" id="btn-prev" onclick="go(-1)">&#8592; Back</button>
+    <div class="prog-wrap">
+      <div class="prog-label" id="prog-lbl"></div>
+      <div class="prog-bar"><div class="prog-fill" id="prog-fill"></div></div>
+    </div>
+    <button class="ctrl-btn" id="btn-next" onclick="go(1)">Next &#8594;</button>
+    <button class="ctrl-btn" id="btn-auto" onclick="toggleAuto()">Auto &#9654;</button>
+  </div>
+
+  <div class="final-quote" id="final-quote">
+    <div class="quote-inner">
+      <blockquote>
+        "Every time the differentiation function recursed, it created new list structures to hold
+        intermediate expressions — churning into existence and then becoming irrelevant as the recursion
+        unwound and the final answer assembled. Nobody freed them. There was no mechanism to free them.
+        They simply accumulated, silently, for the duration of the program."
+      </blockquote>
+      <cite>&#8212; McCarthy's 1958 discovery &nbsp;&#183;&nbsp; The origin of garbage collection</cite>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const NS = 'http://www.w3.org/2000/svg';
+const NW = 72, NH = 26;
+
+// Node positions (viewBox 500 x 350)
+// Differentiating x² via power rule: d/dx(x^n) = n·x^(n-1)
+// Creates: TIMES node, MINUS node (for n-1), constant copies, recursive call
+const NODES = [
+  { id:0, lbl:'d/dx x²',  x:250, y:38 },   // root call
+  { id:1, lbl:'TIMES',    x:160, y:115 },  // multiply (power rule output)
+  { id:2, lbl:'MINUS',    x:360, y:115 },  // exponent − 1
+  { id:3, lbl:'2',        x: 88, y:192 },  // coefficient 2
+  { id:4, lbl:'d/dx x',   x:228, y:192 },  // recursive differentiation
+  { id:5, lbl:'2',        x:318, y:192 },  // exponent copy
+  { id:6, lbl:'1',        x:420, y:192 },  // decrement constant
+  { id:7, lbl:'→ 1',      x:228, y:268 },  // base case: d/dx(x) = 1
+];
+
+// The surviving answer — rendered separately below the tree
+const ANS = { x: 250, y: 316 };
+
+const EDGES = [[0,1],[0,2],[1,3],[1,4],[2,5],[2,6],[4,7]];
+
+// State colors
+const C = {
+  hidden:   { fill:'#0d0c0a', stroke:'#0d0c0a', tc:'#0d0c0a', sw:'1' },
+  live:     { fill:'#101a13', stroke:'#3f7e56', tc:'#70b886', sw:'1.5' },
+  orphaned: { fill:'#0c0b09', stroke:'#1e1c18', tc:'#2a2820', sw:'1' },
+  answer:   { fill:'#1c1808', stroke:'#c0942a', tc:'#d8b848', sw:'2' },
+};
+
+const STEPS = [
+  {
+    id: 'Step 1 / 7 — The expression arrives',
+    narr: 'McCarthy\'s function receives the expression <code>x²</code>, represented in LISP as the list structure <code>(POWER X 2)</code>. The function begins to pattern-match.',
+    vis: { 0:'live' },
+    edges: [],
+    heap: [],
+    ans: false, disc: false, quote: false,
+  },
+  {
+    id: 'Step 2 / 7 — Pattern matched. Allocations begin.',
+    narr: 'It recognises a power expression. The power rule requires a multiplication and a subtraction. Two fresh nodes are <em>allocated from the heap</em> right now, to hold these structures.',
+    vis: { 0:'live', 1:'live', 2:'live' },
+    edges: [[0,1],[0,2]],
+    heap: [
+      {l:'TIMES', s:'live'}, {l:'MINUS', s:'live'},
+    ],
+    ans: false, disc: false, quote: false,
+  },
+  {
+    id: 'Step 3 / 7 — Recursion descends',
+    narr: 'Each new node needs children. The coefficient <code>2</code>, a recursive call <code>d/dx(x)</code>, the original exponent <code>2</code>, the decrement <code>1</code>. Four more allocations. The heap grows with each frame of the recursion.',
+    vis: { 0:'live', 1:'live', 2:'live', 3:'live', 4:'live', 5:'live', 6:'live' },
+    edges: [[0,1],[0,2],[1,3],[1,4],[2,5],[2,6]],
+    heap: [
+      {l:'TIMES',  s:'live'}, {l:'MINUS', s:'live'},
+      {l:'CONST:2',s:'live'}, {l:'d/dx x',s:'live'},
+      {l:'CONST:2',s:'live'}, {l:'CONST:1',s:'live'},
+    ],
+    ans: false, disc: false, quote: false,
+  },
+  {
+    id: 'Step 4 / 7 — Base case reached',
+    narr: '<em>d/dx(x) = 1.</em> The recursion bottoms out. One final allocation for this result. Seven nodes in heap memory. All correct. All necessary — for now.',
+    vis: { 0:'live', 1:'live', 2:'live', 3:'live', 4:'live', 5:'live', 6:'live', 7:'live' },
+    edges: [[0,1],[0,2],[1,3],[1,4],[2,5],[2,6],[4,7]],
+    heap: [
+      {l:'TIMES',   s:'live'}, {l:'MINUS',  s:'live'},
+      {l:'CONST:2', s:'live'}, {l:'d/dx x', s:'live'},
+      {l:'CONST:2', s:'live'}, {l:'CONST:1',s:'live'},
+      {l:'CONST:1', s:'live'},
+    ],
+    ans: false, disc: false, quote: false,
+  },
+  {
+    id: 'Step 5 / 7 — The answer assembles',
+    narr: 'The recursion unwinds. Intermediate values combine: 2 × 1 × x^(2−1). <strong>The answer is 2x.</strong> Correct. Elegant. The function returns.',
+    vis: { 0:'live', 1:'live', 2:'live', 3:'live', 4:'live', 5:'live', 6:'live', 7:'live' },
+    edges: [[0,1],[0,2],[1,3],[1,4],[2,5],[2,6],[4,7]],
+    heap: [
+      {l:'TIMES',   s:'live'}, {l:'MINUS',  s:'live'},
+      {l:'CONST:2', s:'live'}, {l:'d/dx x', s:'live'},
+      {l:'CONST:2', s:'live'}, {l:'CONST:1',s:'live'},
+      {l:'CONST:1', s:'live'}, {l:'→ 2x',   s:'answer'},
+    ],
+    ans: true, disc: false, quote: false,
+  },
+  {
+    id: 'Step 6 / 7 — The silence',
+    narr: 'The answer is correct. But every intermediate node — the TIMES scaffold, the MINUS for the exponent, the copied constants, the recursive call record — <em>has no owner</em>. No pointer leads to them anymore.',
+    vis: { 0:'orphaned', 1:'orphaned', 2:'orphaned', 3:'orphaned', 4:'orphaned', 5:'orphaned', 6:'orphaned', 7:'orphaned' },
+    edges: [],
+    heap: [
+      {l:'TIMES',   s:'orphan'}, {l:'MINUS',  s:'orphan'},
+      {l:'CONST:2', s:'orphan'}, {l:'d/dx x', s:'orphan'},
+      {l:'CONST:2', s:'orphan'}, {l:'CONST:1',s:'orphan'},
+      {l:'CONST:1', s:'orphan'}, {l:'→ 2x',   s:'answer'},
+    ],
+    ans: true, disc: true, quote: false,
+  },
+  {
+    id: 'Step 7 / 7 — Called again. And again.',
+    narr: '"Nobody freed them. There was no mechanism to free them. They simply accumulated, silently, for the duration of the program."',
+    vis: { 0:'orphaned', 1:'orphaned', 2:'orphaned', 3:'orphaned', 4:'orphaned', 5:'orphaned', 6:'orphaned', 7:'orphaned' },
+    edges: [],
+    heap: [
+      // Call 1
+      {l:'TIMES',   s:'orphan'},{l:'MINUS',  s:'orphan'},{l:'CONST:2',s:'orphan'},{l:'d/dx x',s:'orphan'},
+      {l:'CONST:2', s:'orphan'},{l:'CONST:1',s:'orphan'},{l:'CONST:1',s:'orphan'},{l:'→ 2x',  s:'answer'},
+      // Call 2
+      {l:'TIMES',   s:'orphan'},{l:'MINUS',  s:'orphan'},{l:'CONST:2',s:'orphan'},{l:'d/dx x',s:'orphan'},
+      {l:'CONST:2', s:'orphan'},{l:'CONST:1',s:'orphan'},{l:'CONST:1',s:'orphan'},{l:'→ 2x',  s:'answer'},
+      // Call 3
+      {l:'TIMES',   s:'orphan'},{l:'MINUS',  s:'orphan'},{l:'CONST:2',s:'orphan'},{l:'d/dx x',s:'orphan'},
+      {l:'CONST:2', s:'orphan'},{l:'CONST:1',s:'orphan'},{l:'CONST:1',s:'orphan'},{l:'→ 2x',  s:'answer'},
+    ],
+    ans: true, disc: true, quote: true,
+  },
+];
+
+// ── SVG init ─────────────────────────────────────────────────────
+
+function initSVG() {
+  const te = document.getElementById('t-edges');
+  const tn = document.getElementById('t-nodes');
+
+  // Draw tree edges
+  EDGES.forEach(([f, t], i) => {
+    const fn = NODES[f], tn2 = NODES[t];
+    const line = document.createElementNS(NS, 'line');
+    line.id = `e${i}`;
+    line.setAttribute('x1', fn.x);
+    line.setAttribute('y1', fn.y + NH/2 + 1);
+    line.setAttribute('x2', tn2.x);
+    line.setAttribute('y2', tn2.y - NH/2 - 1);
+    line.setAttribute('stroke', '#3f7e56');
+    line.setAttribute('stroke-width', '1');
+    line.style.opacity = '0';
+    line.style.transition = 'opacity .5s, stroke .5s';
+    te.appendChild(line);
+  });
+
+  // Separator line before answer
+  const sep = document.createElementNS(NS, 'line');
+  sep.id = 'sep';
+  sep.setAttribute('x1', 30); sep.setAttribute('x2', 470);
+  sep.setAttribute('y1', 295); sep.setAttribute('y2', 295);
+  sep.setAttribute('stroke', '#1a1814');
+  sep.setAttribute('stroke-width', '0.5');
+  sep.setAttribute('stroke-dasharray', '4,4');
+  sep.style.opacity = '0';
+  sep.style.transition = 'opacity .5s';
+  te.appendChild(sep);
+
+  // Dashed connector: node 0 down to answer
+  const ac = document.createElementNS(NS, 'line');
+  ac.id = 'e-ans';
+  ac.setAttribute('x1', 250); ac.setAttribute('y1', 52);
+  ac.setAttribute('x2', 250); ac.setAttribute('y2', 302);
+  ac.setAttribute('stroke', '#8a6a1a');
+  ac.setAttribute('stroke-width', '0.75');
+  ac.setAttribute('stroke-dasharray', '3,3');
+  ac.style.opacity = '0';
+  ac.style.transition = 'opacity .5s';
+  te.appendChild(ac);
+
+  // Answer label
+  const al = document.createElementNS(NS, 'text');
+  al.id = 'ans-label';
+  al.setAttribute('x', 186);
+  al.setAttribute('y', 292);
+  al.setAttribute('font-size', '7.5');
+  al.setAttribute('font-family', 'Courier New, monospace');
+  al.setAttribute('fill', '#5a4a18');
+  al.setAttribute('letter-spacing', '.1em');
+  al.textContent = 'RESULT';
+  al.style.opacity = '0';
+  al.style.transition = 'opacity .5s';
+  te.appendChild(al);
+
+  // Answer node (special)
+  const ag = document.createElementNS(NS, 'g');
+  ag.id = 'n-ans';
+  ag.style.opacity = '0';
+  ag.style.transition = 'opacity .5s';
+
+  const ar = document.createElementNS(NS, 'rect');
+  ar.setAttribute('x', ANS.x - 44); ar.setAttribute('y', ANS.y - 15);
+  ar.setAttribute('width', 88); ar.setAttribute('height', 30);
+  ar.setAttribute('rx', '5');
+  ar.setAttribute('fill', '#1c1808');
+  ar.setAttribute('stroke', '#c0942a');
+  ar.setAttribute('stroke-width', '1.75');
+
+  const at = document.createElementNS(NS, 'text');
+  at.setAttribute('x', ANS.x); at.setAttribute('y', ANS.y + 1);
+  at.setAttribute('text-anchor', 'middle');
+  at.setAttribute('dominant-baseline', 'central');
+  at.setAttribute('font-size', '13');
+  at.setAttribute('font-family', 'Courier New, monospace');
+  at.setAttribute('fill', '#d8b848');
+  at.setAttribute('font-weight', '500');
+  at.textContent = '2x';
+
+  ag.appendChild(ar); ag.appendChild(at);
+  tn.appendChild(ag);
+
+  // Tree nodes
+  NODES.forEach(n => {
+    const g = document.createElementNS(NS, 'g');
+    g.id = `n${n.id}`;
+    g.style.opacity = '0';
+    g.style.transition = 'opacity .5s';
+
+    const rect = document.createElementNS(NS, 'rect');
+    rect.setAttribute('x', n.x - NW/2);
+    rect.setAttribute('y', n.y - NH/2);
+    rect.setAttribute('width', NW);
+    rect.setAttribute('height', NH);
+    rect.setAttribute('rx', '4');
+    rect.style.transition = 'fill .55s, stroke .55s';
+
+    const txt = document.createElementNS(NS, 'text');
+    txt.setAttribute('x', n.x);
+    txt.setAttribute('y', n.y + 1);
+    txt.setAttribute('text-anchor', 'middle');
+    txt.setAttribute('dominant-baseline', 'central');
+    txt.setAttribute('font-size', '9.5');
+    txt.setAttribute('font-family', 'Courier New, monospace');
+    txt.style.transition = 'fill .55s';
+    txt.textContent = n.lbl;
+
+    g.appendChild(rect); g.appendChild(txt);
+    tn.appendChild(g);
+  });
+}
+
+// ── Render ───────────────────────────────────────────────────────
+
+let cur = 0, timer = null;
+
+function render(s) {
+  const step = STEPS[s];
+
+  document.getElementById('step-id').textContent = step.id;
+  document.getElementById('step-narr').innerHTML = step.narr;
+
+  // Tree nodes
+  NODES.forEach(n => {
+    const g = document.getElementById(`n${n.id}`);
+    const state = step.vis[n.id] || 'hidden';
+    const c = C[state];
+    g.style.opacity = state === 'hidden' ? '0' : '1';
+    const rect = g.querySelector('rect');
+    const txt  = g.querySelector('text');
+    rect.setAttribute('fill', c.fill);
+    rect.setAttribute('stroke', c.stroke);
+    rect.setAttribute('stroke-width', c.sw);
+    txt.setAttribute('fill', c.tc);
+  });
+
+  // Edges
+  EDGES.forEach(([f, t], i) => {
+    const line = document.getElementById(`e${i}`);
+    const active = step.edges.some(([ef,et]) => ef===f && et===t);
+    line.style.opacity = active ? '0.65' : '0';
+  });
+
+  // Answer section
+  const hasAns = step.ans;
+  document.getElementById('n-ans').style.opacity = hasAns ? '1' : '0';
+  document.getElementById('sep').style.opacity = hasAns ? '1' : '0';
+  document.getElementById('e-ans').style.opacity = hasAns ? '0.35' : '0';
+  document.getElementById('ans-label').style.opacity = hasAns ? '1' : '0';
+
+  // Heap
+  const grid = document.getElementById('h-grid');
+  grid.innerHTML = '';
+  step.heap.forEach((h, i) => {
+    const chip = document.createElement('div');
+    chip.className = `chip ${h.s==='orphan' ? 'chip-orphan' : h.s==='answer' ? 'chip-answer' : 'chip-live'}`;
+    chip.style.animationDelay = `${i * 18}ms`;
+    chip.textContent = h.l;
+    grid.appendChild(chip);
+  });
+
+  const total   = step.heap.length;
+  const orphans = step.heap.filter(h => h.s === 'orphan').length;
+  const hc = document.getElementById('h-count');
+
+  if (total === 0) {
+    hc.textContent = '0 nodes';
+    hc.className = 'heap-count';
+  } else if (orphans === 0) {
+    hc.textContent = `${total} allocated`;
+    hc.className = 'heap-count';
+  } else {
+    hc.textContent = `${orphans} orphaned / ${total} total`;
+    hc.className = `heap-count ${orphans > 10 ? 'danger' : 'warn'}`;
+  }
+
+  // Discovery callout
+  document.getElementById('discovery').classList.toggle('show', step.disc);
+
+  // Quote
+  document.getElementById('final-quote').classList.toggle('show', step.quote);
+
+  // Controls
+  document.getElementById('prog-lbl').textContent = `${s+1} / ${STEPS.length}`;
+  document.getElementById('prog-fill').style.width = `${(s+1)/STEPS.length*100}%`;
+  document.getElementById('btn-prev').disabled = s === 0;
+  document.getElementById('btn-next').disabled = s === STEPS.length - 1;
+}
+
+function go(d) {
+  stopAuto();
+  cur = Math.max(0, Math.min(STEPS.length-1, cur+d));
+  render(cur);
+}
+
+function toggleAuto() {
+  if (timer) { stopAuto(); return; }
+  document.getElementById('btn-auto').textContent = 'Pause &#9646;&#9646;';
+  timer = setInterval(() => {
+    if (cur >= STEPS.length - 1) { stopAuto(); return; }
+    cur++;
+    render(cur);
+  }, 2600);
+}
+
+function stopAuto() {
+  if (timer) { clearInterval(timer); timer = null; }
+  document.getElementById('btn-auto').innerHTML = 'Auto &#9654;';
+}
+
+initSVG();
+render(0);
+</script>
+</body>
+</html>

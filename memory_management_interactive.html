@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Memory Management — Dangling Pointers & Memory Leaks</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --color-background-primary: #ffffff;
+    --color-background-secondary: #f5f4f0;
+    --color-text-primary: #1a1a18;
+    --color-text-secondary: #5f5e5a;
+    --color-text-tertiary: #888780;
+    --color-border-tertiary: rgba(0,0,0,0.12);
+    --color-border-secondary: rgba(0,0,0,0.22);
+    --border-radius-md: 8px;
+    --border-radius-lg: 12px;
+    --font-sans: system-ui, -apple-system, sans-serif;
+    --font-mono: ui-monospace, 'Cascadia Code', 'Fira Mono', monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --color-background-primary: #1e1e1c;
+      --color-background-secondary: #2a2a28;
+      --color-text-primary: #f0ede8;
+      --color-text-secondary: #a8a69f;
+      --color-text-tertiary: #6e6d68;
+      --color-border-tertiary: rgba(255,255,255,0.1);
+      --color-border-secondary: rgba(255,255,255,0.2);
+    }
+  }
+  body {
+    font-family: var(--font-sans);
+    background: var(--color-background-primary);
+    color: var(--color-text-primary);
+    padding: 2rem;
+    max-width: 820px;
+    margin: 0 auto;
+    line-height: 1.6;
+  }
+  h1 { font-size: 20px; font-weight: 500; margin-bottom: .35rem; }
+  .sub { font-size: 13.5px; color: var(--color-text-secondary); margin-bottom: 1.5rem; }
+
+  #mmv .cl{padding:1px 8px;font-size:11.5px;line-height:1.85;white-space:pre;overflow:hidden;text-overflow:ellipsis;border-left:2px solid transparent;transition:background .25s,border-color .25s;color:var(--color-text-tertiary);}
+  #mmv .cl.hl{background:rgba(74,142,219,.13);border-left-color:#4a8edb;color:var(--color-text-primary);}
+  #mmv .cl.dg{background:rgba(226,75,74,.13);border-left-color:#E24B4A;color:#A32D2D;}
+  #mmv .hb{border-radius:6px;padding:7px 8px;min-height:76px;transition:background .38s,border-color .38s;border:1px solid;display:flex;flex-direction:column;gap:3px;}
+  #mmv .pb{font-size:9px;padding:1px 5px;border-radius:3px;border:0.5px solid;font-family:var(--font-mono);display:inline-block;margin:1px 1px 0 0;}
+  #mmv .btn{padding:5px 13px;border-radius:20px;border:0.5px solid var(--color-border-secondary);background:transparent;color:var(--color-text-primary);cursor:pointer;font-size:12px;font-family:var(--font-sans);transition:background .15s;}
+  #mmv .btn:hover{background:var(--color-background-secondary);}
+  @keyframes mmvpulse{0%,100%{opacity:1}50%{opacity:.4}}
+  #mmv .corrupted{animation:mmvpulse .85s infinite;}
+</style>
+</head>
+<body>
+
+<h1>Memory Management</h1>
+<p class="sub">Interactive walkthrough of dangling pointers and memory leaks — two classic failure modes from the pre-GC era.</p>
+
+<div id="mmv" style="padding:1.25rem 0;">
+
+  <div style="display:flex;gap:6px;margin-bottom:1rem;padding-bottom:.875rem;border-bottom:0.5px solid var(--color-border-tertiary);">
+    <button class="btn" id="tab-dp" onclick="mmv.setTab('dp')">Dangling pointer</button>
+    <button class="btn" id="tab-ml" onclick="mmv.setTab('ml')" style="opacity:.5;">Memory leak</button>
+  </div>
+
+  <div id="mmv-narr" style="font-size:13.5px;line-height:1.65;padding:.75rem 1rem;background:var(--color-background-secondary);border-radius:var(--border-radius-md);margin-bottom:1rem;min-height:52px;"></div>
+
+  <div style="display:grid;grid-template-columns:43% 57%;gap:14px;align-items:start;">
+    <div>
+      <div style="font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--color-text-tertiary);margin-bottom:7px;">Source</div>
+      <div style="background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:8px 0;overflow:hidden;">
+        <div id="mmv-code" style="font-family:var(--font-mono);"></div>
+      </div>
+    </div>
+    <div>
+      <div style="font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--color-text-tertiary);margin-bottom:7px;">Heap memory</div>
+      <div id="mmv-vars" style="min-height:26px;display:flex;flex-wrap:wrap;gap:5px;margin-bottom:9px;align-items:center;"></div>
+      <div id="mmv-heap" style="display:grid;grid-template-columns:repeat(3,1fr);gap:5px;"></div>
+      <div id="mmv-legend" style="display:flex;flex-wrap:wrap;gap:10px;margin-top:10px;"></div>
+    </div>
+  </div>
+
+  <div style="display:flex;align-items:center;gap:10px;margin-top:1.25rem;padding-top:1rem;border-top:0.5px solid var(--color-border-tertiary);">
+    <button class="btn" onclick="mmv.step(-1)" id="mmv-prev">← Back</button>
+    <div style="flex:1;text-align:center;">
+      <div id="mmv-si" style="font-size:12px;color:var(--color-text-tertiary);margin-bottom:4px;"></div>
+      <div style="height:2px;background:var(--color-border-tertiary);border-radius:1px;overflow:hidden;">
+        <div id="mmv-prog" style="height:100%;background:#4a8edb;border-radius:1px;transition:width .3s;"></div>
+      </div>
+    </div>
+    <button class="btn" onclick="mmv.step(1)" id="mmv-next">Next →</button>
+    <button class="btn" onclick="mmv.auto()" id="mmv-autobt" style="color:var(--color-text-secondary);">Auto</button>
+  </div>
+
+</div>
+
+<script>
+(function(){
+  const dark = matchMedia('(prefers-color-scheme: dark)').matches;
+
+  const S = dark ? {
+    free:      {bg:'rgba(255,255,255,.04)',bd:'rgba(255,255,255,.09)',tc:'rgba(255,255,255,.28)'},
+    allocated: {bg:'#0C447C',bd:'#378ADD',tc:'#B5D4F4'},
+    freed:     {bg:'#501313',bd:'#E24B4A',tc:'#F7C1C1'},
+    reused:    {bg:'#412402',bd:'#EF9F27',tc:'#FAC775'},
+    leaked:    {bg:'#2C2C2A',bd:'#888780',tc:'#B4B2A9'},
+    corrupted: {bg:'#501313',bd:'#F09595',tc:'#F7C1C1'},
+    crash:     {bg:'#4A1B0C',bd:'#D85A30',tc:'#F5C4B3'},
+  } : {
+    free:      {bg:'var(--color-background-secondary)',bd:'var(--color-border-tertiary)',tc:'var(--color-text-tertiary)'},
+    allocated: {bg:'#E6F1FB',bd:'#185FA5',tc:'#0C447C'},
+    freed:     {bg:'#FCEBEB',bd:'#A32D2D',tc:'#791F1F'},
+    reused:    {bg:'#FAEEDA',bd:'#854F0B',tc:'#633806'},
+    leaked:    {bg:'#D3D1C7',bd:'#5F5E5A',tc:'#2C2C2A'},
+    corrupted: {bg:'#F7C1C1',bd:'#E24B4A',tc:'#A32D2D'},
+    crash:     {bg:'#FAECE7',bd:'#993C1D',tc:'#712B13'},
+  };
+
+  const V = dark ? {
+    left:  {bg:'#26215C',bd:'#7F77DD',tc:'#CECBF6'},
+    right: {bg:'#04342C',bd:'#1D9E75',tc:'#9FE1CB'},
+    root:  {bg:'#4A1B0C',bd:'#D85A30',tc:'#F5C4B3'},
+    tree:  {bg:'#042C53',bd:'#378ADD',tc:'#B5D4F4'},
+    iter:  {bg:'#2C2C2A',bd:'#888780',tc:'#B4B2A9'},
+  } : {
+    left:  {bg:'#EEEDFE',bd:'#7F77DD',tc:'#3C3489'},
+    right: {bg:'#E1F5EE',bd:'#1D9E75',tc:'#085041'},
+    root:  {bg:'#FAECE7',bd:'#D85A30',tc:'#712B13'},
+    tree:  {bg:'#E6F1FB',bd:'#185FA5',tc:'#0C447C'},
+    iter:  {bg:'#F1EFE8',bd:'#5F5E5A',tc:'#444441'},
+  };
+
+  const addr = i => '0x'+(16+i*4).toString(16).toUpperCase().padStart(4,'0');
+  const fb  = i => ({id:i,addr:addr(i),label:'-- free --',state:'free',pts:[]});
+  const B   = (id,lbl,st,pts) => ({id,addr:addr(id),label:lbl,state:st,pts:pts||[]});
+
+  const dpCode = [
+    'function parse_expression():',
+    '    left  = alloc(Node)  // "x"',
+    '    right = alloc(Node)  // "1"',
+    '    root  = alloc(Node)  // "+"',
+    '    root.left  = left',
+    '    root.right = right',
+    '    return root',
+    '',
+    'function simplify(node):',
+    '    free(node.left)',
+    '    free(node.right)',
+    '    // caller not notified',
+    '',
+    '// -- back in caller:',
+    'result = eval(left)  // DANGER',
+  ];
+
+  const dpS = [
+    { hl:[],   dg:[],
+      n:"The heap is empty. We're about to build a parse tree for <em>(x + 1)</em> — three nodes, three allocations, all linked by pointers.",
+      blocks:[0,1,2,3,4,5].map(fb), vars:[] },
+    { hl:[1], dg:[],
+      n:"<code>left = alloc(Node)</code> — the allocator hands out <strong>0x0010</strong>. We write the 'x' node there and store the address in <code>left</code>.",
+      blocks:[B(0,'Node "x"','allocated',['left']),fb(1),fb(2),fb(3),fb(4),fb(5)],
+      vars:[{n:'left',v:'0x0010',k:'left'}] },
+    { hl:[2], dg:[],
+      n:"<code>right = alloc(Node)</code> — <strong>0x0014</strong> for the '1' node. Two pointers in hand, one allocation to go.",
+      blocks:[B(0,'Node "x"','allocated',['left']),B(1,'Node "1"','allocated',['right']),fb(2),fb(3),fb(4),fb(5)],
+      vars:[{n:'left',v:'0x0010',k:'left'},{n:'right',v:'0x0014',k:'right'}] },
+    { hl:[3], dg:[],
+      n:"<code>root = alloc(Node)</code> — <strong>0x0018</strong> for the '+' operator. All three nodes live in the heap.",
+      blocks:[B(0,'Node "x"','allocated',['left']),B(1,'Node "1"','allocated',['right']),B(2,'Node "+"','allocated',['root']),fb(3),fb(4),fb(5)],
+      vars:[{n:'left',v:'0x0010',k:'left'},{n:'right',v:'0x0014',k:'right'},{n:'root',v:'0x0018',k:'root'}] },
+    { hl:[4,5,6], dg:[],
+      n:"<code>root.left</code> and <code>root.right</code> wired up. <code>return root</code> — the caller now holds all three pointers independently. The tree looks perfect.",
+      blocks:[B(0,'Node "x"','allocated',['left','root.L']),B(1,'Node "1"','allocated',['right','root.R']),B(2,'Node "+"','allocated',['root']),fb(3),fb(4),fb(5)],
+      vars:[{n:'left',v:'0x0010',k:'left'},{n:'right',v:'0x0014',k:'right'},{n:'root',v:'0x0018',k:'root'}] },
+    { hl:[9], dg:[],
+      n:"<code>simplify()</code> runs. It decides the left child is reducible: <code>free(node.left)</code>. Block 0x0010 is handed back to the allocator. <em>It cannot know who else holds this address.</em>",
+      blocks:[B(0,'Node "x"','freed',['left !']),B(1,'Node "1"','allocated',['right','root.R']),B(2,'Node "+"','allocated',['root']),fb(3),fb(4),fb(5)],
+      vars:[{n:'left',v:'0x0010 !',k:'left'},{n:'right',v:'0x0014',k:'right'},{n:'root',v:'0x0018',k:'root'}] },
+    { hl:[10], dg:[],
+      n:"<code>free(node.right)</code>. Both child nodes freed. <code>simplify</code> returns — it did its job correctly. It never asked whether anyone else held <code>left</code> or <code>right</code>. It had no way to.",
+      blocks:[B(0,'Node "x"','freed',['left !']),B(1,'Node "1"','freed',['right !']),B(2,'Node "+"','allocated',['root']),fb(3),fb(4),fb(5)],
+      vars:[{n:'left',v:'0x0010 !',k:'left'},{n:'right',v:'0x0014 !',k:'right'},{n:'root',v:'0x0018',k:'root'}] },
+    { hl:[], dg:[],
+      n:"The allocator immediately reuses 0x0010 for a new request elsewhere in the program. It now holds a loop counter, value 42. The old 'x' node is gone.",
+      blocks:[B(0,'Counter: 42','reused',['left !']),B(1,'Node "1"','freed',['right !']),B(2,'Node "+"','allocated',['root']),fb(3),fb(4),fb(5)],
+      vars:[{n:'left',v:'0x0010 !',k:'left'},{n:'right',v:'0x0014 !',k:'right'},{n:'root',v:'0x0018',k:'root'}] },
+    { hl:[14], dg:[14],
+      n:"<strong>CRASH.</strong> <code>eval(left)</code> executes. <code>left</code> still holds 0x0010 — but that block belongs to a Counter now. The program reads it as a tree node. Wrong result, program crash, or silent corruption of Counter: 42. The error is nowhere near <code>simplify</code>.",
+      blocks:[B(0,'Counter: 42','corrupted',['left !']),B(1,'Node "1"','freed',['right !']),B(2,'Node "+"','allocated',['root']),fb(3),fb(4),fb(5)],
+      vars:[{n:'left',v:'0x0010 !',k:'left'},{n:'right',v:'0x0014 !',k:'right'},{n:'root',v:'0x0018',k:'root'}] },
+  ];
+
+  const mlCode = [
+    'function build_and_simplify(expr):',
+    '    tree = parse_expression(expr)',
+    '    result = simplify(tree)',
+    '    return result',
+    '    // tree nodes never freed!',
+    '',
+    '// 10,000 iterations:',
+    'for each term in polynomial:',
+    '    result = build_and_simplify(term)',
+  ];
+
+  const nodeLabels = ['"x"','"1"','"+"'];
+  const LK = (i,it) => ({id:i,addr:addr(i),label:`iter${it}: ${nodeLabels[i%3]}`,state:'leaked',pts:['leaked']});
+  const AL = (i,it) => ({id:i,addr:addr(i),label:`iter${it}: ${nodeLabels[i%3]}`,state:'allocated',pts:['tree']});
+
+  function mlBlocks(leaked, active, crash) {
+    return Array(12).fill(null).map((_,i) => {
+      if (crash && i >= 9) return B(i,['OUT OF','MEMORY','[ crash ]'][i-9],'crash',[]);
+      if (i < leaked) return LK(i, Math.floor(i/3)+1);
+      if (i < leaked+active) return AL(i, Math.floor(i/3)+1);
+      return fb(i);
+    });
+  }
+
+  const mlS = [
+    { hl:[7,8], dg:[],
+      n:"We enter a loop calling <code>build_and_simplify</code> for each term of a large polynomial. Each call allocates 3 nodes. Watch the heap.",
+      blocks:mlBlocks(0,0,false), vars:[{n:'iteration',v:'0',k:'iter'}] },
+    { hl:[1], dg:[],
+      n:"Iteration 1. <code>parse_expression</code> allocates 3 nodes at 0x0010–0x0018. Healthy, correct allocations.",
+      blocks:mlBlocks(0,3,false), vars:[{n:'iter',v:'1',k:'iter'},{n:'tree',v:'0x0010',k:'tree'}] },
+    { hl:[2,3,4], dg:[],
+      n:"<code>simplify</code> returns. The local variable <code>tree</code> goes out of scope — but no one freed 0x0010–0x0018. Those nodes are now <em>unreachable and permanent</em>.",
+      blocks:mlBlocks(3,0,false), vars:[{n:'iter',v:'1',k:'iter'}] },
+    { hl:[1], dg:[],
+      n:"Iteration 2. Three new nodes at 0x001C–0x0024. The 3 leaked nodes from iteration 1 sit there frozen — the program can never reach or free them.",
+      blocks:mlBlocks(3,3,false), vars:[{n:'iter',v:'2',k:'iter'},{n:'tree',v:'0x001C',k:'tree'}] },
+    { hl:[2,3,4], dg:[],
+      n:"Iteration 2 complete. 6 nodes leaked. The program still produces correct output. Nothing looks wrong. The heap fills in silence.",
+      blocks:mlBlocks(6,0,false), vars:[{n:'iter',v:'2',k:'iter'}] },
+    { hl:[1], dg:[],
+      n:"Iteration 3. 9 nodes leaked. The heap is three-quarters full. Correct answers still streaming out. The failure is accumulating invisibly.",
+      blocks:mlBlocks(6,3,false), vars:[{n:'iter',v:'3',k:'iter'},{n:'tree',v:'0x0028',k:'tree'}] },
+    { hl:[2,3,4], dg:[],
+      n:"Iteration 3 complete. 9 nodes leaked, 3 slots left. The program has been running correctly for hours.",
+      blocks:mlBlocks(9,0,false), vars:[{n:'iter',v:'3',k:'iter'}] },
+    { hl:[7,8], dg:[7,8],
+      n:"<strong>CRASH.</strong> Iteration 4 — <code>alloc()</code> fails. The heap is exhausted. The program dies here, in the loop, in code that has nothing to do with the bug. The leak was written thousands of iterations ago, in a function that returned correct results every time.",
+      blocks:mlBlocks(9,0,true), vars:[{n:'iter',v:'4',k:'iter'}] },
+  ];
+
+  let tab = 'dp', idx = 0, timer = null;
+  const sc = () => tab === 'dp' ? {code:dpCode, steps:dpS} : {code:mlCode, steps:mlS};
+  const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+  function varKey(p) {
+    return p.replace(/\s*!/g,'').replace('leaked','leaked').split('.')[0].toLowerCase().trim();
+  }
+
+  function badge(p) {
+    const k = varKey(p);
+    const c = V[k] || (dark
+      ? {bg:'rgba(255,255,255,.07)',bd:'rgba(255,255,255,.2)',tc:'rgba(255,255,255,.6)'}
+      : {bg:'#F1EFE8',bd:'#888780',tc:'#444441'});
+    return `<span class="pb" style="background:${c.bg};border-color:${c.bd};color:${c.tc};">${p}</span>`;
+  }
+
+  function render() {
+    const {code, steps} = sc();
+    const step = steps[idx];
+
+    document.getElementById('mmv-narr').innerHTML = step.n;
+
+    document.getElementById('mmv-code').innerHTML = code.map((line,i) => {
+      const isDg = step.dg && step.dg.includes(i);
+      const isHl = step.hl.includes(i);
+      return `<div class="cl${isDg?' dg':isHl?' hl':''}">${esc(line)||'&nbsp;'}</div>`;
+    }).join('');
+
+    const ve = document.getElementById('mmv-vars');
+    ve.innerHTML = step.vars.length
+      ? step.vars.map(v => {
+          const c = V[v.k] || V.iter;
+          return `<span style="font-family:var(--font-mono);font-size:11px;padding:3px 8px;border-radius:12px;background:${c.bg};color:${c.tc};border:0.5px solid ${c.bd};">${v.n} = ${v.v}</span>`;
+        }).join('')
+      : '<span style="font-size:11px;color:var(--color-text-tertiary);font-family:var(--font-mono);">no variables yet</span>';
+
+    document.getElementById('mmv-heap').innerHTML = step.blocks.map(b => {
+      const s = S[b.state];
+      const stateLbl = b.state !== 'free' ? `<div style="font-size:8.5px;letter-spacing:.05em;text-transform:uppercase;color:${s.tc};opacity:.65;">${b.state}</div>` : '';
+      const pts = b.pts.map(badge).join('');
+      return `<div class="hb${b.state==='corrupted'?' corrupted':''}" style="background:${s.bg};border-color:${s.bd};color:${s.tc};">
+        <div style="font-size:8.5px;opacity:.5;font-family:var(--font-mono);">${b.addr}</div>
+        ${stateLbl}
+        <div style="font-size:11px;font-weight:500;font-family:var(--font-mono);line-height:1.3;">${b.label}</div>
+        ${pts ? `<div style="margin-top:2px;">${pts}</div>` : ''}
+      </div>`;
+    }).join('');
+
+    document.getElementById('mmv-si').textContent = `Step ${idx+1} of ${steps.length}`;
+    document.getElementById('mmv-prog').style.width = ((idx+1)/steps.length*100) + '%';
+    document.getElementById('mmv-prev').style.opacity = idx === 0 ? '.3' : '1';
+    document.getElementById('mmv-next').style.opacity = idx === steps.length-1 ? '.3' : '1';
+
+    ['dp','ml'].forEach(t => {
+      document.getElementById('tab-'+t).style.opacity = t === tab ? '1' : '.5';
+    });
+  }
+
+  (function renderLegend() {
+    const items = [
+      ['allocated', S.allocated],
+      ['freed',     S.freed],
+      ['reused',    S.reused],
+      ['leaked',    S.leaked],
+    ];
+    document.getElementById('mmv-legend').innerHTML = items.map(([lbl, s]) =>
+      `<span style="font-size:10px;color:var(--color-text-tertiary);display:flex;align-items:center;gap:4px;">
+        <span style="width:8px;height:8px;border-radius:2px;background:${s.bg};border:0.5px solid ${s.bd};flex-shrink:0;"></span>${lbl}
+      </span>`
+    ).join('');
+  })();
+
+  function stopAuto() {
+    if (timer) { clearInterval(timer); timer = null; }
+    document.getElementById('mmv-autobt').textContent = 'Auto';
+  }
+
+  window.mmv = {
+    setTab(t) { stopAuto(); tab = t; idx = 0; render(); },
+    step(d) {
+      stopAuto();
+      const {steps} = sc();
+      idx = Math.max(0, Math.min(steps.length-1, idx+d));
+      render();
+    },
+    auto() {
+      if (timer) { stopAuto(); return; }
+      document.getElementById('mmv-autobt').textContent = 'Pause';
+      timer = setInterval(() => {
+        const {steps} = sc();
+        if (idx >= steps.length-1) { stopAuto(); return; }
+        idx++; render();
+      }, 2400);
+    }
+  };
+
+  render();
+})();
+</script>
+</body>
+</html>
