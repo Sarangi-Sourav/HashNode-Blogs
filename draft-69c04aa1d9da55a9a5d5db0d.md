@@ -213,7 +213,7 @@ However, all these were just theories that McCarthy proposed in his 1960's paper
 
 He considered it primarily theoretical.
 
-**Steve Russell, Dan Edwards and the Implementation**
+**Steve Russell, Dan Edwards, and the Implementation**
 
 In the fall of 1958, a twenty-two-year-old from rural Washington state, with a keen interest in electronics, arrived at MIT after completing his undergraduate studies at Dartmouth, where McCarthy had recruited him.
 
@@ -250,13 +250,13 @@ Despite McCarthy's skepticism, Russell proceeded to hand-code eval, creating the
 > 
 > Before Russell implemented eval, Lisp was just a collection of subroutines that had to be manually translated into assembly language to run. By implementing the eval function itself in machine code, Russell created a system that could read Lisp code and execute it directly. This established the "Read-Eval-Print Loop" (REPL) that remains the heart of Lisp development today.
 
-The implementation demanded a meticulously crafted table identifying every location in the running program where a list pointer might reside every stack slot, register, and global variable so the mark phase could locate all the roots. This table was compiled by manually examining the assembly code line by line and recording each pertinent address.
+The implementation demanded a meticulously crafted table identifying every location in the running program where a list pointer might reside, every stack slot, register, and global variable, so the mark phase could locate all the roots. This table was compiled by manually examining the assembly code line by line and recording each pertinent address.
 
-But It was incomplete.
+But it was incomplete.
 
 > *"For at least a year, and I think longer than that, we would periodically get bugs where somebody had done some perfectly innocent function and had gotten the free storage list tacked in the middle of its list structure, because something that shouldn't have been garbage collected was."*
 
-The collector was silently reclaiming memory still in use by programs, corrupting live data structures. These bugs were intermittent, surfacing only when the collector activated, which happened when memory was nearly exhausted. This meant the cause and symptom were separated by vast amounts of computation, with no clear link between them.
+The collector was silently reclaiming memory still in use by programs, corrupting live data structures. These bugs were intermittent, surfacing only when the collector was activated, which happened when memory was nearly exhausted. This meant the cause and symptom were separated by vast amounts of computation, with no clear link between them.
 
 Observe the parallel. The dangling pointer from Act One, the crash occurring far from its cause, had resurfaced within the tool designed to prevent it. The first garbage collector had its own bug: it discarded memory it should have retained.
 
@@ -268,11 +268,11 @@ Additionally, there was the glaring issue of the <mark class="bg-yellow-200 dark
 
 **The Idea That Wouldn't Stay Contained**
 
-LISP survived the demo. The concept, that a program shouldn't need to manage the lifetimes of its data structures, proved too influential to be confined to just one language.
+LISP survived the demo. The concept that a program shouldn't need to manage the lifetimes of its data structures proved too influential to be confined to just one language.
 
 However, it also proved costly, sparking a more profound debate.
 
-In systems programming, there was a deeply ingrained belief that programmers should have complete understanding and control over the machine. Every allocation, every deallocation, every byte had to be accounted for. This wasn't mere obstinacy, it was the engineering principle of those creating real-time systems, where a pause for garbage collection could result in a missed deadline, a lost network packet, or a control loop that failed to execute.
+In systems programming, there was a deeply ingrained belief that programmers should have a complete understanding and control over the machine. Every allocation, every deallocation, every byte had to be accounted for. This wasn't mere obstinacy; it was the engineering principle of those creating real-time systems, where a pause for garbage collection could result in a missed deadline, a lost network packet, or a control loop that failed to execute.
 
 In 2008, Steve Russell, who had witnessed the trade-offs of garbage collection for over fifty years, expressed the underlying tension:
 
@@ -282,11 +282,11 @@ For the next six decades, researchers worked to balance the cost, with each new 
 
 **Copying collectors**, introduced by Fenichel & Yochelson in 1969 and Cheney in 1970, addressed fragmentation by moving all live objects to a new memory region and completely discarding the old one. This made allocation as quick as a pointer bump, efficient, cache-friendly, and without the need to traverse a free list. The trade-off was that half of the heap had to be kept empty as a destination for evacuation.
 
-**Concurrent collectors**, developed by Dijkstra, and others in 1978, tackled the stop-the-world issue by introducing the tri-color abstraction. This method classified objects as white (not yet reached), grey (reached but not fully scanned), or black (fully processed). They formally demonstrated that running the collector alongside the program was safe, as long as write barriers intercepted every pointer write to maintain the invariant. The world didn't have to stop; it just needed to be monitored.
+**Concurrent collectors**, developed by Dijkstra and others in 1978, tackled the stop-the-world issue by introducing the tri-color abstraction. This method classified objects as white (not yet reached), grey (reached but not fully scanned), or black (fully processed). They formally demonstrated that running the collector alongside the program was safe, as long as write barriers intercepted every pointer write to maintain the invariant. The world didn't have to stop; it just needed to be monitored.
 
 **Generational collection** (Lieberman & Hewitt, 1983; Ungar, 1984) shifted the focus entirely. Rather than figuring out how to collect the entire heap more efficiently, it questioned whether collecting the entire heap was even necessary.
 
-The answer came from data. Researchers studying running programs in LISP, Smalltalk, and later Java found the same pattern everywhere: the overwhelming majority of allocated objects die almost immediatel, before the next allocation of comparable size, sometimes within microseconds. A small fraction survive for a long time. Almost nothing occupies the middle. David Ungar called this the generational hypothesis, and his 1984 "Generation Scavenging" algorithm for Smalltalk-80 was built entirely around exploiting it.
+The answer came from data. Researchers studying running programs in LISP, Smalltalk, and later Java found the same pattern everywhere: the overwhelming majority of allocated objects die almost immediately, before the next allocation of comparable size, sometimes within microseconds. A small fraction survives for a long time. Almost nothing occupies the middle. David Ungar called this the generational hypothesis, and his 1984 "Generation Scavenging" algorithm for Smalltalk-80 was built entirely around exploiting it.
 
 The concept involves splitting the heap into a small nursery for new objects and a larger old generation for those that survive. The nursery is collected frequently. Since it's small enough to fit entirely in the CPU cache, a nursery collection takes only milliseconds. Most objects die before their first collection, allowing a nursery sweep to reclaim the majority of garbage. In Ungar's experiments, about 98% of objects perished in the nursery without being promoted to the old generation, which rarely needed collection due to its cost.
 
@@ -298,7 +298,7 @@ This was not a minor improvement. Generational collection turned garbage collect
 
 Java arrived in 1995, bringing automatic memory management into the mainstream. Suddenly, millions of programmers no longer needed to call free(). Languages like Python, Ruby, JavaScript, and Go embraced this approach. Yet, C and C++ remained prevalent.
 
-Rust introduced a third option: automatic memory management through static analysis at compile time, enforcing ownership rules so rigorously that memory safety is ensured before execution no collector, no pauses, no runtime overhead. The cost is a cognitive one, not in CPU cycles.
+Rust introduced a third option: automatic memory management through static analysis at compile time, enforcing ownership rules so rigorously that memory safety is ensured before execution, no collector, no pauses, no runtime overhead. The cost is a cognitive one, not in CPU cycles.
 
 The argument that started in a basement at MIT in 1958 is still going.
 
