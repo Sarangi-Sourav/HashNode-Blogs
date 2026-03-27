@@ -207,4 +207,8 @@ function collect():
 
 That's the entire process: two phases, one mark bit per object, and a linear scan. McCarthy's differentiation function, which he insisted on keeping elegant without explicit erasure, could now operate smoothly. It could create and discard list structures without manual tracking, as the collector would identify the unused ones when the heap was full.
 
-Once they decided on garbage collection, McCarthy noted, *"its actual implementation could be postponed, because only toy examples were being done."* That casual line contains GC's deepest promise: *write your programs now. The machine handles the bookkeeping later.* The programmer thinks about the problem. The runtime thinks about the plumbing.
+However, McCarthy didn't emphasize this aspect, noting that:
+
+> *"Its actual implementation could be postponed, as only toy examples were being used."*
+
+He considered it primarily theoretical.
