@@ -1,6 +1,5 @@
 ---
 title: "The 1960 Algorithm Your Phone Runs Millions of Times a Day"
-cover: https://cdn.hashnode.com/uploads/covers/69a498aaa7428b958decac2d/550997f7-f97f-499d-90ee-1919177b8934.jpg
 
 ---
 
