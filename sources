@@ -1,0 +1,58 @@
+Primary Sources
+---------------
+1. McCarthy, John. "History of LISP."
+In: History of Programming Languages, ACM SIGPLAN, 1981.
+Chaired by Barbara Liskov. Published by Academic Press.
+ISBN: 0-12-745040-8
+(This is the paper with the Flexowriter anecdote, the hardware constraint detail, the "unattractive" quote, and McCarthy's own description of the GC algorithm. Everything attributed directly to McCarthy in the blog comes from this document.)
+
+2. Russell, Steve. Oral History.
+Interviewed by Al Kossow.
+Recorded: August 9, 2008. Mountain View, California.
+Computer History Museum.
+CHM Reference number: X4970.2009
+(Source for Russell's background, his account of implementing eval, his account of GC bugs persisting over a year, and his 2008 assessment of GC's tradeoffs at Juniper.)
+
+3. Stoyan, Herbert. "Early LISP History (1956–1959)."
+In: LFP '84: Proceedings of the 1984 ACM Symposium on LISP and Functional Programming, August 1984.
+ACM. DOI: https://doi.org/10.1145/800055.802047
+ISBN: 0897911423
+(Source for Dan Edwards implementing the first GC in June/July 1959, the May 15 1959 interpreter without GC, the disputed R. Silver attribution, and the timeline of the LISP implementation from Memo 1 through the first working system.)
+
+Secondary Sources 
+-----------------
+4. McCarthy, John. "Recursive Functions of Symbolic Expressions and Their Computation by Machine, Part I."
+Communications of the ACM, 3(4): 184–195, 1960.
+(The original paper containing the theoretical description of mark-and-sweep.)
+
+5. Collins, G.E. "A method for overlapping and erasure of lists."
+Communications of the ACM, 3(12): 655–657, 1960.
+(The reference counting paper, same year as McCarthy's GC paper.)
+
+6. Cheney, C.J. "A nonrecursive list compacting algorithm."
+Communications of the ACM, 13(11): 677–678, 1970.
+(The two-page paper that solved the recursion problem in copying collection.)
+
+7. Dijkstra, E.W., Lamport, L., Martin, A.J., Scholten, C.S., and Steffens, E.F.M. "On-the-fly garbage collection: An exercise in cooperation."
+Communications of the ACM, 21(11): 966–975, 1978.
+(The tri-color abstraction and concurrent collection paper.)
+
+8. Fenichel, R.R. and Yochelson, J.C. "A LISP Garbage-Collector for Virtual-Memory Computer Systems."
+Communications of the ACM, 12(11): 611–612, 1969.
+(The first copying collector.)
+
+9. Lieberman, H. and Hewitt, C. "A real-time garbage collector based on the lifetimes of objects."
+Communications of the ACM, 26(6): 419–429, 1983.
+(The generational hypothesis paper.)
+
+10. Ungar, David. "Generation Scavenging: A non-disruptive high performance storage reclamation algorithm."
+ACM SIGPLAN Notices, 19(5): 157–167, 1984.
+(The first practical generational collector, for Smalltalk-80. Source of the 98% figure.)
+
+11. Detlefs, D., Flood, C., Heller, S., and Printezis, T. "Garbage-first garbage collection."
+Proceedings of the 4th International Symposium on Memory Management (ISMM '04), 2004. ACM.
+(The G1 collector paper.)
+
+12. ZGC: Liden, Per and Karlsson, Stefan. OpenJDK project documentation, Oracle, 2018 onward. Available at openjdk.org.
+
+13. Shenandoah: Flood, Christine and Kennke, Roman. Red Hat engineering blog and OpenJDK documentation, 2016 onward.
