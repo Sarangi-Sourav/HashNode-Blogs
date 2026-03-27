@@ -28,11 +28,11 @@ The real story isn't about the embarrassing demo. The real story is about why a 
 
 > *<mark class="bg-yellow-200 dark:bg-yellow-500/30">What is Symbolic Math?</mark>*
 > 
-> *Think of the difference between* ***doing math*** *and* ***learning the rules of math***\*:\*
+> *Think of the difference between* ***doing math*** *and* ***learning the rules of math***:
 > 
-> *   ***Arithmetic (Regular Math):*** *If I ask you, "What is 2 + 3 = ?" you say* ***5***\*. You are working with numbers to get a final result.\*
+> *   ***Arithmetic (Regular Math):*** *If I ask you, "What is 2 + 3 = ?" you say* ***5***. You are working with numbers to get a final result.
 >     
-> *   ***Symbolic Math:*** *If I ask you, "What is the rule for adding any two things?" you say* ***x + y***\*. You aren't looking for a number; you are looking for the pattern or the rule itself.\*
+> *   ***Symbolic Math:*** *If I ask you, "What is the rule for adding any two things?" you say* ***x + y***. You aren't looking for a number; you are looking for the pattern or the rule itself.
 >     
 > 
 > *John McCarthy wanted to teach computers to move "symbols" (like x, y, +, or \\) around. He wanted the computer to follow a "rule" to change one math sentence into another, for example, automatically turning x^2 into 2x without even knowing what x stands for.*
