@@ -9,10 +9,10 @@ cover: https://cdn.hashnode.com/uploads/covers/69a498aaa7428b958decac2d/277d6da7
 **Cambridge, Massachusetts. 1960.**
 
 Picture the room. Fourth floor of MIT, a crowd of industry executives, the kind of people who fund research, who decide which ideas live and which ones die. They are watching a closed-circuit television screen. Downstairs, in the computer room, **John McCarthy** is running a demonstration of something nobody in this room has ever seen before.  
-A *language* that could reason about *<mark class="bg-yellow-200 dark:bg-yellow-500/30">symbolic mathematics</mark>* the way a human mind does.  
-  
-The problem chosen for the demo was elegant: determine whether a first-order differential equation of the form **M dx + N dy** was exact by testing whether **∂M/∂y = ∂N/∂x** symbolic algebra. Live. On a computer. In 1960.  
-  
+A *language* that could reason about *<mark class="bg-yellow-200 dark:bg-yellow-500/30">symbolic mathematics</mark>* the way a human mind does.
+
+The problem chosen for the demo was elegant: determine whether a first-order differential equation of the form **M dx + N dy** was exact by testing whether **∂M/∂y = ∂N/∂x** symbolic algebra. Live. On a computer. In 1960.
+
 Everything is going well, and then the Flexowriter begins to type:  
 THE GARBAGE COLLECTOR HAS BEEN CALLED.
 
@@ -22,21 +22,21 @@ And then it keeps going *on and on and on.* A full page of statistics: how many 
 
 McCarthy later wrote: *"Nothing had ever been said about a garbage collector, and I could only imagine the reaction of the audience... both the lecturer and the audience were incapacitated by laughter. I think some of them thought we were victims of a practical joke."*
 
-But here is the thing nobody immediately noticed then: it’s the GC, **which worked perfectly.**  
-  
+But here is the thing nobody immediately noticed then: it’s the GC, **which worked perfectly.**
+
 The real story isn't about the embarrassing demo. The real story is about why a garbage collector needed to exist in the first place and why solving that problem required a kind of thinking so radical that it changed every program you have ever run, on every device you have ever touched, for the rest of your life.
 
 > *<mark class="bg-yellow-200 dark:bg-yellow-500/30">What is Symbolic Math?</mark>*
 > 
-> *Think of the difference between* ***doing math*** *and* ***learning the rules of math****:*
+> *Think of the difference between* ***doing math*** *and* ***learning the rules of math***\*:\*
 > 
-> *   ***Arithmetic (Regular Math):*** *If I ask you, "What is 2 + 3 = ?" you say* ***5****. You are working with numbers to get a final result.*
+> *   ***Arithmetic (Regular Math):*** *If I ask you, "What is 2 + 3 = ?" you say* ***5***\*. You are working with numbers to get a final result.\*
 >     
-> *   ***Symbolic Math:*** *If I ask you, "What is the rule for adding any two things?" you say* ***x + y****. You aren't looking for a number; you are looking for the pattern or the rule itself.*
+> *   ***Symbolic Math:*** *If I ask you, "What is the rule for adding any two things?" you say* ***x + y***\*. You aren't looking for a number; you are looking for the pattern or the rule itself.\*
 >     
 > 
-> *John McCarthy wanted to teach computers to move "symbols" (like x, y, +, or \\) around. He wanted the computer to follow a "rule" to change one math sentence into another, for example, automatically turning x^2 into 2x without even knowing what x stands for.*  
->   
+> *John McCarthy wanted to teach computers to move "symbols" (like x, y, +, or \\) around. He wanted the computer to follow a "rule" to change one math sentence into another, for example, automatically turning x^2 into 2x without even knowing what x stands for.*
+> 
 > ⚠️ **The Catch:** Moving these symbols around required the computer to constantly create "scratchpad" notes to keep track of the patterns. This is where McCarthy noticed a massive problem...
 
 **ACT ONE: THE WORLD BEFORE**
@@ -54,7 +54,6 @@ You write through your old pointer, thinking you are updating your data. You are
 > These failure modes had names:  
 > A **dangling pointer**: you free memory but keep a reference to it, and the next allocation reuses that address for something completely unrelated; you think you are writing to your data structure; you are overwriting someone else's.
 > 
->   
 > A ***memory leak***: you allocate memory and simply forget to free it. The program runs perfectly for hours, days, even, and then dies when the heap silently fills. Both failures shared the same pathology cause and symptoms separated in time and space by millions of instructions, with nothing in between to tell you where the wound was.
 
 ![](https://cdn.hashnode.com/uploads/covers/69a498aaa7428b958decac2d/20538b7d-1201-4014-a999-fa26f8da2890.png align="center")
@@ -75,14 +74,14 @@ During that period, his colleagues were using FLPL (Fortran List Processing Lang
 
 > *"The recursive definition of differentiation made no provision for erasure of abandoned list structure. No solution was apparent at the time, but the idea of complicating the elegant definition of differentiation with explicit erasure was unattractive."*
 
-The term "unattractive" carries significant philosophical weight. McCarthy wasn't suggesting that explicit erasure was technically impossible; he meant it contradicted the language's fundamental purpose.  
-  
-He was creating a tool for artificial intelligence to enable machines to think more like humans. Humans don't monitor the ownership of every intermediate thought. When solving a math problem mentally, you don't remember to "free" the partial sums; they simply become irrelevant and disappear.  
-  
+The term "unattractive" carries significant philosophical weight. McCarthy wasn't suggesting that explicit erasure was technically impossible; he meant it contradicted the language's fundamental purpose.
+
+He was creating a tool for artificial intelligence to enable machines to think more like humans. Humans don't monitor the ownership of every intermediate thought. When solving a math problem mentally, you don't remember to "free" the partial sums; they simply become irrelevant and disappear.
+
 McCarthy wanted LISP to function similarly. The programmer should focus on what to compute, while the machine manages where to store it.
 
-This was, in 1958, a radical idea.  
-  
+This was, in 1958, a radical idea.
+
 **ACT TWO: THE BIRTH**
 
 **The Two Alternatives**
@@ -297,8 +296,8 @@ This was not a minor improvement. Generational collection turned garbage collect
 
 **ZGC** (Liden, Karlsson - Oracle, 2018) utilized unused bits in 64-bit pointers to store GC metadata, intercepting each pointer read with a load barrier to dynamically correct stale references. This enabled sub-millisecond pauses, regardless of heap size, even on terabyte-scale heaps.
 
-Java arrived in 1995, bringing automatic memory management into the mainstream. Suddenly, millions of programmers no longer needed to call free(). Languages like Python, Ruby, JavaScript, and Go embraced this approach. Yet, C and C++ remained prevalent.  
-  
+Java arrived in 1995, bringing automatic memory management into the mainstream. Suddenly, millions of programmers no longer needed to call free(). Languages like Python, Ruby, JavaScript, and Go embraced this approach. Yet, C and C++ remained prevalent.
+
 Rust introduced a third option: automatic memory management through static analysis at compile time, enforcing ownership rules so rigorously that memory safety is ensured before execution no collector, no pauses, no runtime overhead. The cost is a cognitive one, not in CPU cycles.
 
 The argument that started in a basement at MIT in 1958 is still going.
@@ -321,4 +320,6 @@ After sixty-eight years, every garbage collection algorithm balances three key p
    You cannot simultaneously optimize all three.                                                                 
 ```
 
-This is not a temporary limitation awaiting a smarter algorithm. It is an inherent characteristic of the problem space more akin to the CAP theorem in distributed systems than to an engineering shortcoming.
+This is not a temporary limitation awaiting a smarter algorithm. It is an inherent characteristic of the problem space more akin to the CAP theorem in distributed systems than to an engineering shortcoming.  
+  
+**Sources:** `John McCarthy, "History of LISP," History of Programming Languages conference proceedings, 1981. Steve Russell, Oral History, Computer History Museum, August 9, 2008 (CHM Reference X4970.2009). McCarthy 1960 (CACM 3:4). Collins 1960 (CACM 3:655). Cheney 1970 (CACM 13:11). Dijkstra et al. 1978 (CACM 21:11). Lieberman & Hewitt 1983 (CACM 26:6). Ungar 1984 (SIGPLAN Notices 19:5). Detlefs et al. 2004 (ISMM '04).` Detailed Source
