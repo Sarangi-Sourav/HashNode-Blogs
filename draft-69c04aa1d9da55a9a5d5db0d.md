@@ -6,19 +6,19 @@ cover: https://cdn.hashnode.com/uploads/covers/69a498aaa7428b958decac2d/277d6da7
 
 **Ten Characters Per Second**
 
-**Cambridge, Massachusetts. 1960.**
+**Cambridge, Massachusetts. 1962.**
 
-Picture the room. Fourth floor of MIT, a crowd of industry executives, the kind of people who fund research, who decide which ideas live and which ones die. They are watching a closed-circuit television screen. Downstairs, in the computer room, **John McCarthy** is running a demonstration of something nobody in this room has ever seen before.  
+Picture the room. On the fourth floor of MIT, a crowd of industry executives, the kind of people who fund research, who decide which ideas live and which ones die, are watching a closed-circuit television screen. Downstairs, in the computer room, **John McCarthy** is running a demonstration of something nobody in this room has ever seen before.  
 A *language* that could reason about *<mark class="bg-yellow-200 dark:bg-yellow-500/30">symbolic mathematics</mark>* the way a human mind does.
 
-The problem chosen for the demo was elegant: determine whether a first-order differential equation of the form **M dx + N dy** was exact by testing whether **∂M/∂y = ∂N/∂x** symbolic algebra. Live. On a computer. In 1960.
+The problem chosen for the demo was elegant: determine whether a first-order differential equation of the form **M dx + N dy** was exact by testing whether **∂M/∂y = ∂N/∂x**, symbolic algebra live on a computer in 1962.
 
 Everything is going well, and then the Flexowriter begins to type:  
 THE GARBAGE COLLECTOR HAS BEEN CALLED.
 
 SOME INTERESTING STATISTICS ARE AS FOLLOWS:
 
-And then it keeps going *on and on and on.* A full page of statistics: how many words were marked, how many were collected, and the total size of list space. All of it, at ten characters per second, slowly consuming every remaining second of the allocated demonstration time.
+And then it keeps going *on and on and on.* A full page of statistics: how many words were marked, how many were collected, and the total size of list space. All of it, at a speed of ten characters per second, and the printer was really determined and persistent in typing out these long, technical messages, slowly consuming every remaining second of the allocated demonstration time.
 
 McCarthy later wrote: *"Nothing had ever been said about a garbage collector, and I could only imagine the reaction of the audience... both the lecturer and the audience were incapacitated by laughter. I think some of them thought we were victims of a practical joke."*
 
