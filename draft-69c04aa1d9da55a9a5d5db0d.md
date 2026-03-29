@@ -9,7 +9,7 @@ cover: https://cdn.hashnode.com/uploads/covers/69a498aaa7428b958decac2d/277d6da7
 **Cambridge, Massachusetts. 1962.**
 
 Picture the room. On the fourth floor of MIT, a crowd of industry executives, the kind of people who fund research, who decide which ideas live and which ones die, are watching a closed-circuit television screen. Downstairs, in the computer room, **John McCarthy** is running a demonstration of something nobody in this room has ever seen before.  
-A *language* that could reason about *<mark class="bg-yellow-200 dark:bg-yellow-500/30">symbolic mathematics</mark>* the way a human mind does.
+A *language* that could reason about *symbolic mathematics* the way a human mind does.
 
 The problem chosen for the demo was elegant: determine whether a first-order differential equation of the form **M dx + N dy** was exact by testing whether **∂M/∂y = ∂N/∂x**, symbolic algebra live on a computer in 1962.
 
@@ -26,7 +26,7 @@ But here is the thing nobody immediately noticed then: it’s the GC, **which w
 
 The real story isn't about the embarrassing demo. The real story is about why a garbage collector needed to exist in the first place and why solving that problem required a kind of thinking so radical that it changed every program you have ever run, on every device you have ever touched, for the rest of your life.
 
-> *<mark class="bg-yellow-200 dark:bg-yellow-500/30">What is Symbolic Math?</mark>*
+> *What is Symbolic Math?*
 > 
 > *Think of the difference between* ***doing math*** *and* ***learning the rules of math***:
 > 
@@ -217,7 +217,7 @@ He considered it primarily theoretical.
 
 In the fall of 1958, a twenty-two-year-old from rural Washington state, with a keen interest in electronics, arrived at MIT after completing his undergraduate studies at Dartmouth, where McCarthy had recruited him.
 
-It was **Steve Russell**. Russell initially worked on manually translating Lisp functions like car and cdr into machine code to assist in building a compiler. While reading McCarthy's paper, he noticed the *<mark class="bg-yellow-200 dark:bg-yellow-500/30">eval </mark>* function and believed he could implement it to create a Lisp interpreter. When he proposed this idea, McCarthy famously told him:
+It was **Steve Russell**. Russell initially worked on manually translating Lisp functions like car and cdr into machine code to assist in building a compiler. While reading McCarthy's paper, he noticed the *eval* function and believed he could implement it to create a Lisp interpreter. When he proposed this idea, McCarthy famously told him:
 
 > "Ho , ho, you are confusing theory with practice."
 
@@ -260,7 +260,7 @@ The collector was silently reclaiming memory still in use by programs, corruptin
 
 Observe the parallel. The dangling pointer from Act One, the crash occurring far from its cause, had resurfaced within the tool designed to prevent it. The first garbage collector had its own bug: it discarded memory it should have retained.
 
-Additionally, there was the glaring issue of the <mark class="bg-yellow-200 dark:bg-yellow-500/30">Stop-The-World</mark> problem associated with those garbage collectors.
+Additionally, there was the glaring issue of the *Stop-The-World* problem associated with those garbage collectors.
 
 > **Stop the world** is a phase in garbage collection (GC) where all application threads are halted so that the collector can perform its work safely. This is done to ensure the garbage collector has exclusive access to the memory and that the application does not interfere with the process, such as by allocating new objects or modifying references during the collection.
 
