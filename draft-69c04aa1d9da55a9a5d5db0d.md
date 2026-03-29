@@ -56,7 +56,7 @@ You write through your old pointer, thinking you are updating your data. You are
 > 
 > A ***memory leak***: you allocate memory and simply forget to free it. The program runs perfectly for hours, days, even, and then dies when the heap silently fills. Both failures shared the same pathology cause and symptoms separated in time and space by millions of instructions, with nothing in between to tell you where the wound was.
 
-![](https://cdn.hashnode.com/uploads/covers/69a498aaa7428b958decac2d/20538b7d-1201-4014-a999-fa26f8da2890.png align="center")
+![](https://cdn.hashnode.com/uploads/covers/69a498aaa7428b958decac2d/2dadc173-5367-45cd-a7e0-78adf5515379.png align="center")
 
 **The Erasure Problem**
 
